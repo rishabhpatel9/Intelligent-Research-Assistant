@@ -1,5 +1,6 @@
 # Planned System Architecture
 
+```text
                        ┌───────────────────────────┐
                        │   User Query (Gradio UI)  │
                        └─────────────┬─────────────┘
@@ -46,3 +47,4 @@
                        │   (executive summary,     │
                        │   recruiter-facing polish)│
                        └───────────────────────────┘
+```

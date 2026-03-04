@@ -16,9 +16,14 @@ def classify_query_llm(query: str) -> str:
     """
     messages = [
         {"role": "system", "content": (
-            "You are a query classifier. "
+            "You are a strict query classifier. "
             "Classify the user query into exactly one of these categories: "
             "search, summarize, factcheck, hybrid. "
+            "Rules:\n"
+            "- If the query asks for current, latest, or recent info → search\n"
+            "- If the query asks to condense, shorten, or summarize text → summarize\n"
+            "- If the query asks whether something is true/false or requests verification → factcheck\n"
+            "- If the query asks for comparison, pros/cons, or analysis across options → hybrid\n"
             "Respond with only the category name, nothing else."
         )},
         {"role": "user", "content": query}

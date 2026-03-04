@@ -10,13 +10,13 @@ def run(text: str) -> str:
         system_prompt = (
             "You are a summarizer. The user has provided limited context "
             "(mostly headlines or short snippets). "
-            "Instead of a detailed summary, produce a high level overview "
-            "of the main themes or topics implied by the sources."
+            "Produce a high-level overview of the main themes implied by the sources."
         )
     else:
         system_prompt = (
             "You are a summarizer. Condense the following content into a clear, concise overview. "
             "Focus on the main themes and avoid repetition."
+            "Limit your response to 4–5 sentences."
         )
 
     messages = [

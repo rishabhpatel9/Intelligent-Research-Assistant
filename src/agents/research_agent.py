@@ -1,3 +1,4 @@
+from typing import TypedDict
 from src.llm_client import query_llm
 from langgraph.graph import StateGraph, END
 from src.tools import search, summarize, factcheck, hybrid
@@ -37,34 +38,31 @@ def classify_query_llm(query: str) -> str:
     return result.strip().lower()
 
 # Define the state
-class AgentState(dict):
-    pass
+class AgentState(TypedDict):
+    query: str
+    category: str
+    result: str
 
-def classify_node(state: AgentState) -> str:
+def classify_node(state: AgentState) -> dict:
     query = state["query"]
     category = classify_query_llm(query)
-    state["category"] = category
-    return category
+    return {"category": category}
 
-def search_node(state: AgentState) -> str:
+def search_node(state: AgentState) -> dict:
     result = search.run(state["query"])
-    state["result"] = result
-    return END
+    return {"result": result}
 
-def summarize_node(state: AgentState) -> str:
+def summarize_node(state: AgentState) -> dict:
     result = summarize.run(state["query"])
-    state["result"] = result
-    return END
+    return {"result": result}
 
-def factcheck_node(state: AgentState) -> str:
+def factcheck_node(state: AgentState) -> dict:
     result = factcheck.run(state["query"])
-    state["result"] = result
-    return END
+    return {"result": result}
 
-def hybrid_node(state: AgentState) -> str:
+def hybrid_node(state: AgentState) -> dict:
     result = hybrid.run(state["query"])
-    state["result"] = result
-    return END
+    return {"result": result}
 
 # Build the graph
 graph = StateGraph(AgentState)
@@ -77,9 +75,23 @@ graph.add_node("hybrid", hybrid_node)
 
 graph.set_entry_point("classify")
 
-graph.add_edge("classify", "search")
-graph.add_edge("classify", "summarize")
-graph.add_edge("classify", "factcheck")
-graph.add_edge("classify", "hybrid")
+def route_query(state: AgentState) -> str:
+    return state["category"]
+
+graph.add_conditional_edges(
+    "classify",
+    route_query,
+    {
+        "search": "search",
+        "summarize": "summarize",
+        "factcheck": "factcheck",
+        "hybrid": "hybrid",
+    }
+)
+
+graph.add_edge("search", END)
+graph.add_edge("summarize", END)
+graph.add_edge("factcheck", END)
+graph.add_edge("hybrid", END)
 
 workflow = graph.compile()

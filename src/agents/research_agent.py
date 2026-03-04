@@ -77,9 +77,9 @@ graph.add_node("hybrid", hybrid_node)
 
 graph.set_entry_point("classify")
 
-graph.add_edge("classify", "search", condition=lambda s: s["category"] == "search")
-graph.add_edge("classify", "summarize", condition=lambda s: s["category"] == "summarize")
-graph.add_edge("classify", "factcheck", condition=lambda s: s["category"] == "factcheck")
-graph.add_edge("classify", "hybrid", condition=lambda s: s["category"] == "hybrid")
+graph.add_edge("classify", "search")
+graph.add_edge("classify", "summarize")
+graph.add_edge("classify", "factcheck")
+graph.add_edge("classify", "hybrid")
 
 workflow = graph.compile()

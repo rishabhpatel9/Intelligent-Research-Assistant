@@ -1,5 +1,5 @@
 
-from src.agents.research_agent import classify_query
+from src.agents.research_agent import classify_query_llm
 
 queries = [
     "What are the latest AI techniques in healthcare?",
@@ -9,5 +9,6 @@ queries = [
 ]
 
 for q in queries:
+    category = classify_query_llm(q)
     print(f"Query: {q}")
-    print(f"Classification: {classify_query(q)}\n")
+    print(f"LLM Classification: {category}\n")

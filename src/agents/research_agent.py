@@ -1,7 +1,6 @@
 from src.llm_client import query_llm
 from langgraph.graph import StateGraph, END
 from src.tools import search, summarize, factcheck, hybrid
-from src.agents.research_agent import classify_query_llm
 
 def classify_query_llm(query: str) -> str:
     """

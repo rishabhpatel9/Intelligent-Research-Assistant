@@ -1,28 +1,29 @@
-def classify_query(query: str) -> str:
+from src.llm_client import query_llm
+
+def classify_query_llm(query: str) -> str:
     """
     Classify the user query into one of four categories:
-    - "search": needs fresh info from the web
-    - "summarize": summarization of provided text/documents
-    - "factcheck": verifying a claim
-    - "hybrid": ambiguous or multi-step queries
+    - "search"
+    - "summarize"
+    - "factcheck"
+    - "hybrid"
 
     Args:
         query (str): The user input query
 
     Returns:
-        str: One of ["search", "summarize", "factcheck", "hybrid"]
+        str: One of the categories above
     """
-    q_lower = query.lower()
+    messages = [
+        {"role": "system", "content": (
+            "You are a query classifier. "
+            "Classify the user query into exactly one of these categories: "
+            "search, summarize, factcheck, hybrid. "
+            "Respond with only the category name, nothing else."
+        )},
+        {"role": "user", "content": query}
+    ]
 
-    # keyword based rules
-    if any(word in q_lower for word in ["latest", "current", "recent", "update", "news"]):
-        return "search"
-    elif any(word in q_lower for word in ["summarize", "overview", "condense", "shorten"]):
-        return "summarize"
-    elif any(word in q_lower for word in ["true", "false", "verify", "fact", "accurate", "check"]):
-        return "factcheck"
-    elif any(word in q_lower for word in ["compare", "analyze", "pros and cons", "versus"]):
-        return "hybrid"
-    # Default fallback
-    else:
-        return "hybrid"
+    result = query_llm(messages)
+    # Normalize output
+    return result.strip().lower()

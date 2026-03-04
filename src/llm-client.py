@@ -3,16 +3,27 @@ import os
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
 
-def query_llm(messages, model="qwen3.5-2b"):
+def query_llm(messages, model="qwen3.5-2b", temperature=0.7):
     """
-    Send a chat-style request to LM Studio running locally.
-    messages: list of dicts, e.g. [{"role": "user", "content": "Hello"}]
+    Args:
+        messages (list): Conversation history in OpenAI-style format.
+                        Example: [{"role": "user", "content": "Hello"}]
+        model (str): Model name configured in LM Studio.
+        temperature (float): Sampling temperature for creativity.
+
+    Returns:
+        str: The assistant's reply content.
     """
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": 0.7
+        "temperature": temperature
     }
-    response = requests.post(LM_STUDIO_URL, json=payload)
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+
+    try:
+        response = requests.post(LM_STUDIO_URL, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"[LLM Error] {str(e)}"

@@ -1,17 +1,27 @@
 from src.llm_client import query_llm
 
-def run(query: str) -> str:
+def run(text: str) -> str:
     """
-    Summarize given text (snippets, headlines, or article content) using LM Studio.
+    Summarize given text (snippets, headlines, or article content).
+    Handles cases where context is minimal by producing a thematic overview.
     """
-    messages = [
-        {"role": "system", "content": (
+    # Decide if there is enough context
+    if len(text.strip()) < 50:  # arbitrary threshold for "short input"
+        system_prompt = (
+            "You are a summarizer. The user has provided limited context "
+            "(mostly headlines or short snippets). "
+            "Instead of a detailed summary, produce a high level overview "
+            "of the main themes or topics implied by the sources."
+        )
+    else:
+        system_prompt = (
             "You are a summarizer. Condense the following content into a clear, concise overview. "
             "Focus on the main themes and avoid repetition."
-        )},
-        {"role": "user", "content": query}
+        )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": text}
     ]
 
     return query_llm(messages)
-
-# yet to add fetch_web_content for better summaries if snippets don't have enough context

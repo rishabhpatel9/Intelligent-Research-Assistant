@@ -3,7 +3,7 @@ import os
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
 
-def query_llm(messages, model="local-model"):
+def query_llm(messages, model="qwen3.5-2b"):
     """
     Send a chat-style request to LM Studio running locally.
     messages: list of dicts, e.g. [{"role": "user", "content": "Hello"}]

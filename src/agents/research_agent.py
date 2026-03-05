@@ -25,6 +25,13 @@ def classify_query_llm(query: str) -> str:
     # Normalize output
     return result.strip().lower()
 
+def classify_query(query: str) -> str:
+    # If the query contains a long block of text, force summarize 
+    # to prevent sending huge text blocks to search APIs (which causes errors).
+    if len(query.split()) > 50:
+        return "summarize"
+    return classify_query_llm(query)
+
 # Define the state
 class AgentState(TypedDict):
     query: str
@@ -33,7 +40,7 @@ class AgentState(TypedDict):
 
 def classify_node(state: AgentState) -> dict:
     query = state["query"]
-    category = classify_query_llm(query)
+    category = classify_query(query)
     return {"category": category}
 
 def search_node(state: AgentState) -> dict:

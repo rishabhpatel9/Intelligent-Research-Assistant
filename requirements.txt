@@ -4,3 +4,4 @@ gradio
 requests
 pydantic
 python-dotenv
+beautifulsoup4

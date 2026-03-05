@@ -1,12 +1,11 @@
 from src.tools import search, summarize
 
 def run(query: str) -> str:
-    # Runs search first, then summarizes the results for queries that need both retrieval and synthesis.
+    # If query is too long, treat it as summarize-only
+    if len(query.split()) > 20:
+        return summarize.run(query)
 
-    # Step 1: Run search
     search_results = search.run(query)
-
-    # Step 2: Pass search results into summarizer
     summary = summarize.run(search_results)
 
     # Step 3: Return combined output with proper format

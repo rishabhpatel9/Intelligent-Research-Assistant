@@ -4,19 +4,7 @@ from langgraph.graph import StateGraph, END
 from src.tools import search, summarize, factcheck, hybrid
 
 def classify_query_llm(query: str) -> str:
-    """
-    Classify the user query into one of four categories:
-    - "search"
-    - "summarize"
-    - "factcheck"
-    - "hybrid"
-
-    Args:
-        query (str): The user input query
-
-    Returns:
-        str: One of the categories above
-    """
+    # Classify the user query into one of four categories and returns str: One of the categories
     messages = [
         {"role": "system", "content": (
             "You are a strict query classifier. "

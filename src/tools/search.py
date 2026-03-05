@@ -5,10 +5,8 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 TAVILY_URL = "https://api.tavily.com/search"
 
 def run(query: str) -> str:
-    """
-    Perform a web search using Tavily API.
-    Returns a formatted string of results.
-    """
+    
+    # Perform a web search using Tavily API. Returns a formatted string of results.
     if not TAVILY_API_KEY:
         return "[Search Error] Tavily API key not set."
 

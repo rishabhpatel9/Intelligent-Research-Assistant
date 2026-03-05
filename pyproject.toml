@@ -1,7 +1,7 @@
 [project]
 name = "intelligent-research-assistant"
 version = "0.1.0"
-description = "Add your description here"
+description = "A GenAI powered intelligent agent that dynamically automates complex research workflows by intelligently searching, summarizing, fact checking, and synthesizing information."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

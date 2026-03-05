@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: intelligent-research-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Use host.docker.internal to allow the container to communicate with LM Studio on the host machine
+      - LM_STUDIO_URL=http://host.docker.internal:1234/v1/chat/completions
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: intelligent-research-frontend
+    ports:
+      - "7860:7860"
+    environment:
+      - API_URL=http://backend:8000/query
+    depends_on:
+      - backend

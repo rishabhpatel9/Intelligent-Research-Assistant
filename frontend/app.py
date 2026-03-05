@@ -110,4 +110,4 @@ with gr.Blocks(title="Intelligent Research Assistant") as iface:
         )
 
 if __name__ == "__main__":
-    iface.launch(pwa=True, theme=custom_theme, css=custom_css)
+    iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)

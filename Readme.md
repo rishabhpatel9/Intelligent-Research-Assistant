@@ -14,16 +14,17 @@ I built this platform to automate complex research workflows and make deep analy
   * **Fact Check Module:** Dedicated to rigorous verification of claims using trusted references.
   * **Hybrid Workflow:** Combines search, summary, and fact-checking to tackle complicated, multi-part questions.
 * **Structured, Publication-Ready Output:** The assistant automatically formats its intelligence into polished reports incorporating executive summaries, bulleted insights, tables for data-heavy concepts, and strict citations to ensure credibility.
-* **Progressive Web App (PWA) Frontend:** Our refined Gradio interface provides a modern, responsive, and application-like experience. The UI features a carefully crafted "Soft" theme with slate and gray aesthetics, an optimized reading layout, and Markdown-rendered outputs. 
+* **Progressive Web App (PWA) Frontend:** Our refined Gradio interface provides a modern, responsive, and application-like experience. The UI features a carefully crafted "Soft" theme with slate and gray aesthetics, an optimized reading layout, and Markdown-rendered outputs.
 
 ## Technology Stack
 
 This project leverages a modern, highly optimized technology stack:
+
 * **LangGraph:** Orchestrates our multi-step agentic workflows, branching logic, and runtime state management.
 * **LangSmith:** Provides deep transparency, debugging, and evaluation metrics into the agent's internal reasoning traces.
 * **FastAPI & Pydantic:** Powers the robust, type-checked backend REST API for processing query requests.
 * **Gradio:** Drives the user-facing web interface and seamless Progressive Web App (PWA) functionality.
-* **LM Studio:** Powers local LLM integration for privacy-first natural language understanding and generation, bypassing the need for external APIs.
+* **LM Studio:** Powers local LLM integration for privacy first natural language understanding and generation, bypassing the need for external APIs. Smart resource usage with 'Just in time' model loading.
 * **BeautifulSoup4 & Requests:** Drives external web-scraping and internal HTTP communication.
 * **Python & UV:** The foundation of the system, utilizing standard Python built securely and quickly with the UV package manager.
 * **Docker:** Facilitates system-agnostic reproducibility and streamlined deployment.
@@ -82,4 +83,3 @@ This project leverages a modern, highly optimized technology stack:
 ### Workflow Graph (LangGraph)
 
 ![Workflow Graph](./assets/workflow_graph.png)
-

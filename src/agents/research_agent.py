@@ -1,7 +1,12 @@
 from typing import TypedDict
+from src.config import load_config
 from src.llm_client import query_llm
 from langgraph.graph import StateGraph, END
 from src.tools import search, summarize, factcheck, hybrid
+
+# Load environment variables (including LangSmith settings)
+load_config()
+
 
 def classify_query_llm(query: str) -> str:
     # Classify the user query into one of four categories and returns str: One of the categories

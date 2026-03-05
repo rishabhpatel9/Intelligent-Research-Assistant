@@ -78,3 +78,8 @@ This project leverages a modern, highly optimized technology stack:
                        │   recruiter-facing polish)│
                        └───────────────────────────┘
 ```
+
+### Workflow Graph (LangGraph)
+
+![Workflow Graph](./assets/workflow_graph.png)
+

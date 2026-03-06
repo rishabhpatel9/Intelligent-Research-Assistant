@@ -13,15 +13,15 @@ def classify_query_llm(query: str) -> str:
     messages = [
         {"role": "system", "content": (
             "You are a strict query classifier. "
-            "Classify the user query into exactly one of these categories: "
-            "search, summarize, factcheck, hybrid. "
+            "Classify the user query into exactly one of these 4 categories: "
+            "'search', 'summarize', 'factcheck', 'hybrid'. "
             "Rules:\n"
-            "- If the query asks whether something is true/false, requests verification, or asks 'Is it true that...' → factcheck\n"
-            "- If the query asks to condense, shorten, or summarize text → summarize\n"
-            "- If the query asks for comparison, pros/cons, or analysis across options → hybrid\n"
-            "- If the query asks for current, latest, or recent info → search\n"
-            "Important: Always choose factcheck for verification-style queries, even if they could also involve searching. "
-            "Respond with only the category name, nothing else."
+            "- 'factcheck' : if the query asks whether something is true/false, requests verification, or asks 'Is it true that...'\n"
+            "- 'summarize' : if the query asks to condense, shorten, or summarize text\n"
+            "- 'hybrid' : if the query asks for comparison, pros/cons, or analysis across options\n"
+            "- 'search' : if the query asks for general knowledge, current events, latest info, or answers to queries like 'who', 'what'\n"
+            "Important: Always choose factcheck for verification-style queries. "
+            "Respond ONLY with the category name (search, summarize, factcheck, or hybrid), nothing else."
         )},
         {"role": "user", "content": query}
     ]
@@ -29,11 +29,15 @@ def classify_query_llm(query: str) -> str:
     result = query_llm(messages)
     # Normalize output
     category = result.strip().lower()
-
-    if category not in ["search", "summarize", "factcheck", "hybrid"]:
-        return "search"
-        
-    return category
+    
+    if "factcheck" in category:
+        return "factcheck"
+    elif "summarize" in category:
+        return "summarize"
+    elif "hybrid" in category:
+        return "hybrid"
+    
+    return "search"
 
 def classify_query(query: str) -> str:
     # If the query contains a long block of text, force summarize 

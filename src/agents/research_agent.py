@@ -28,7 +28,12 @@ def classify_query_llm(query: str) -> str:
 
     result = query_llm(messages)
     # Normalize output
-    return result.strip().lower()
+    category = result.strip().lower()
+
+    if category not in ["search", "summarize", "factcheck", "hybrid"]:
+        return "search"
+        
+    return category
 
 def classify_query(query: str) -> str:
     # If the query contains a long block of text, force summarize 

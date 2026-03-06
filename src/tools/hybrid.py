@@ -11,7 +11,7 @@ def run(query: str) -> str:
     # Step 3: Return combined output with proper format
     formatted_output = (
         "**Summary**\n"
-        f"{summary}"
+        f"{summary}\n\n"
         "**Search Results (Top Sources)**\n"
         f"{search_results}\n\n"
     )

@@ -11,3 +11,7 @@ Readme.md
 release_notes_v1.0.0.md
 example.env
 LICENSE
+assets/
+.python-version
+.gitignore
+docker-compose.yml

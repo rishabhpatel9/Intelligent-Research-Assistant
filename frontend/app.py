@@ -2,7 +2,7 @@ import gradio as gr
 import requests
 import os
 
-# Default to local FastAPI backend, override in deployment
+# Set local FastAPI backend URL
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/query")
 
 def run_query(query: str):
@@ -16,7 +16,7 @@ def run_query(query: str):
             category = data.get('category', 'Unknown')
             result_content = data.get('result', '')
             
-            # Format the output using markdown
+            # Format output as markdown
             return f"Query Category: {category}\n\n---\n\n{result_content}"
         else:
             return f"Error {response.status_code}: Could not process the query."
@@ -32,7 +32,7 @@ custom_theme = gr.themes.Soft(
     neutral_hue="slate"
 )
 
-# Custom CSS for spacing, maximum width, and better reading experience
+# Custom CSS for UI layout
 custom_css = """
 .research-container {
     max-width: 800px !important;
@@ -95,14 +95,14 @@ with gr.Blocks(title="Intelligent Research Assistant") as iface:
             outputs=output_display
         )
         
-        # Also allow submitting by pressing Command/Ctrl + Enter inside Textbox
+        # Submit on Command/Ctrl + Enter
         query_input.submit(
             fn=run_query,
             inputs=query_input,
             outputs=output_display
         )
         
-        # Clear functionality
+        # Clear inputs and results
         clear_btn.click(
             fn=lambda: ("", "_Results will appear here..._"),
             inputs=None,

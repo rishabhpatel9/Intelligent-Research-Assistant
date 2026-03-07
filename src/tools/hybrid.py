@@ -8,7 +8,7 @@ def run(query: str) -> str:
 
     search_results = search.run(query)
     
-    # Use LLM to actively synthesize search results into a comprehensive report
+    # Synthesize search results into a detailed report
     messages = [
         {"role": "system", "content": (
             "You are an expert research synthesizer. "

@@ -3,7 +3,7 @@ from src.tools import search
 from src.utils.web_content import fetch_web_content
 
 def run(query: str) -> str:
-    # Verifies whether a claim is true or false. Fetches full content from top 4 search results, then asks LLM to analyze.
+    # Verify claim by fetching web content and analyzing via LLM
     
     # Step 1: Run search
     search_results = search.run(query)

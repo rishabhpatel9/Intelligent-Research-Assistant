@@ -4,16 +4,7 @@ import os
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
 
 def query_llm(messages, model="qwen3.5-2b", temperature=0.7):
-    """
-    Args:
-        messages (list): Conversation history in OpenAI-style format.
-                        Example: [{"role": "user", "content": "Hello"}]
-        model (str): Model name configured in LM Studio.
-        temperature (float): Sampling temperature for creativity.
-
-    Returns:
-        str: The assistant's reply content.
-    """
+    """Send conversation history to local LLM and return reply"""
     def _make_request(current_model):
         payload = {
             "model": current_model,

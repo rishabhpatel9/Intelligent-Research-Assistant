@@ -12,16 +12,15 @@ def classify_query_llm(query: str) -> str:
     # Classify the user query into one of four categories and returns str: One of the categories
     messages = [
         {"role": "system", "content": (
-            "You are a strict query classifier. "
-            "Classify the user query into exactly one of these 4 categories: "
+            "You are a strict, precise query classifier. "
+            "Classify the user query into exactly ONE of these 4 categories: "
             "'search', 'summarize', 'factcheck', 'hybrid'. "
             "Rules:\n"
-            "- 'factcheck' : if the query asks whether something is true/false, requests verification, or asks 'Is it true that...'\n"
-            "- 'summarize' : if the query asks to condense, shorten, or summarize text\n"
-            "- 'hybrid' : if the query asks for comparison, pros/cons, or analysis across options\n"
-            "- 'search' : if the query asks for general knowledge, current events, latest info, or answers to queries like 'who', 'what'\n"
-            "Important: Always choose factcheck for verification-style queries. "
-            "Respond ONLY with the category name (search, summarize, factcheck, or hybrid), nothing else."
+            "- 'factcheck' : query asks whether something is true/false, requests verification, or asks 'Is it true that...'\n"
+            "- 'summarize' : query asks to condense, shorten, or summarize text that is provided or referenced\n"
+            "- 'hybrid' : query asks for deep comparison, pros/cons, or complex analysis across multiple facets\n"
+            "- 'search' : query asks for general knowledge, current events, latest info, 'who', 'what', or 'when'\n"
+            "CRITICAL: Respond ONLY with the exact single word matching the category ('search', 'summarize', 'factcheck', or 'hybrid'). Do not include any punctuation or extra text."
         )},
         {"role": "user", "content": query}
     ]

@@ -9,7 +9,7 @@ load_config()
 
 
 def classify_query_llm(query: str) -> str:
-    # Classify the user query into one of four categories and returns str: One of the categories
+    # Classify user query into exactly one category
     messages = [
         {"role": "system", "content": (
             "You are a strict, precise query classifier. "
@@ -39,8 +39,7 @@ def classify_query_llm(query: str) -> str:
     return "search"
 
 def classify_query(query: str) -> str:
-    # If the query contains a long block of text, force summarize 
-    # to prevent sending huge text blocks to search APIs (which causes errors).
+    # Force summarize for long queries to avoid search API errors
     if len(query.split()) > 50:
         return "summarize"
     return classify_query_llm(query)

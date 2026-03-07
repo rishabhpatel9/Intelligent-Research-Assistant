@@ -180,3 +180,11 @@ To safely stop and remove the containers once you're done, run:
 ```bash
 docker-compose down
 ```
+
+## Future Improvements & Roadmap
+
+To further elevate this Intelligent Research Assistant and deliver unparalleled value, the following features are planned:
+- **Multi-Agent Debates**: Implementing a reviewer/supervisor agent that debates and critiques the primary agent's findings to ensure maximum rigor.
+- **Deep Persistent Memory**: Allowing the system to remember insights from past queries to build a personalized knowledge graph over time.
+- **Multimodal Extraction**: Enabling the system to process not just text, but also images, charts, and diagrams from PDFs or web pages during its fact checking and summarization phases.
+- **Interactive Citation Networks**: Providing a visual graph where users can click on citations to immediately see how sources interlink.

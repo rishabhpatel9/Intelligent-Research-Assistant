@@ -1,4 +1,5 @@
 from src.tools import search, summarize
+from src.llm_client import query_llm
 
 def run(query: str) -> str:
     # If query is too long, treat it as summarize-only
@@ -6,13 +7,27 @@ def run(query: str) -> str:
         return summarize.run(query)
 
     search_results = search.run(query)
-    summary = summarize.run(search_results)
+    
+    # Use LLM to actively synthesize search results into a comprehensive report
+    messages = [
+        {"role": "system", "content": (
+            "You are an expert research synthesizer. "
+            "Your task is to analyze the provided search results and synthesize a comprehensive, highly structured research report answering the user's query.\n"
+            "Format your response with:\n"
+            "1. Executive Summary: A high-level overview.\n"
+            "2. Deep Dive Analysis: Detailed insights organized with clear headings.\n"
+            "3. Key Takeaways: A bulleted list of the most critical points.\n"
+            "Ensure the report is objective, well-structured, and strictly uses the provided search results without hallucinating."
+        )},
+        {"role": "user", "content": f"Query: {query}\n\nSearch Results:\n{search_results}"}
+    ]
+    
+    synthesis = query_llm(messages)
 
-    # Step 3: Return combined output with proper format
+    # Return combined output with proper format
     formatted_output = (
-        "**Summary**\n"
-        f"{summary}\n\n"
-        "**Search Results (Top Sources)**\n"
+        f"{synthesis}\n\n"
+        "**Source References**\n"
         f"{search_results}\n\n"
     )
 

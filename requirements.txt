@@ -5,3 +5,6 @@ requests
 pydantic
 python-dotenv
 beautifulsoup4
+duckduckgo-search
+wikipedia
+arxiv

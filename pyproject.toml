@@ -5,11 +5,14 @@ description = "A GenAI powered intelligent agent that dynamically automates comp
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "arxiv>=2.4.1",
     "beautifulsoup4>=4.14.3",
+    "duckduckgo-search>=8.1.1",
     "gradio>=6.8.0",
     "langgraph>=1.0.10",
     "langsmith>=0.7.11",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
     "requests>=2.32.5",
+    "wikipedia>=1.4.0",
 ]

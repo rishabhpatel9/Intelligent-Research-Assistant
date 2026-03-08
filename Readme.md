@@ -184,6 +184,9 @@ docker-compose down
 ## Future Improvements & Roadmap
 
 To further elevate this Intelligent Research Assistant and deliver unparalleled value, the following features are planned:
+- **Autonomous Research Studio**: Transitioning from a single shot router to an asynchronous, multi-hop agent swarm (Orchestrator, Scout, Critic, Synthesizer) that autonomously plans, executes, and self corrects complex research briefs.
+- **Omni-Search Engine Strategy**: Implementing a redundant, cost optimized 4 layer search hierarchy (LLM Logic & caching -> Free APIs like DuckDuckGo/Wikipedia/ArXiv -> Deep Scrapers -> Premium Fallback) to massively reduce search API costs.
+- **Human-in-the-Loop (HITL)**: Enabling users to review, edit, or approve the generated Research Execution Plan before the agent swarm consumes time and API credits.
 - **Multi-Agent Debates**: Implementing a reviewer/supervisor agent that debates and critiques the primary agent's findings to ensure maximum rigor.
 - **Deep Persistent Memory**: Allowing the system to remember insights from past queries to build a personalized knowledge graph over time.
 - **Multimodal Extraction**: Enabling the system to process not just text, but also images, charts, and diagrams from PDFs or web pages during its fact checking and summarization phases.

@@ -76,22 +76,26 @@ def clear_ui():
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 
 custom_css = """
-:root {
-  --radius-xl: 8px;
-  --radius-lg: 8px;
-  --radius-md: 8px;
-  --radius-sm: 8px;
-  --block-radius: 8px;
-  --button-large-radius: 8px;
-  --button-small-radius: 8px;
-  --container-radius: 8px;
-  --input-radius: 8px;
+:root, .gradio-container, body {
+  --radius-xl: 8px !important;
+  --radius-lg: 8px !important;
+  --radius-md: 8px !important;
+  --radius-sm: 8px !important;
+  --block-radius: 8px !important;
+  --button-large-radius: 8px !important;
+  --button-small-radius: 8px !important;
+  --container-radius: 8px !important;
+  --input-radius: 8px !important;
 }
 .research-container { max-width: 800px !important; margin: 0 auto !important; padding-top: 2rem !important; }
-.output-markdown { padding: 1.5rem; border-radius: 8px; background-color: var(--background-fill-secondary); border: 1px solid var(--border-color-primary); min-height: 200px; }
+.output-markdown { padding: 10px 12px !important; min-height: 200px; border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; }
 .btn-green:hover { background-image: none !important; background-color: #10b981 !important; border-color: #10b981 !important; color: white !important; }
 .btn-red:hover { background-image: none !important; background-color: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
 .btn-blue:hover { background-image: none !important; background-color: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; }
+.title-header { margin-bottom: 0.5rem !important; padding-top: 1rem !important; }
+.subtitle-text { margin-bottom: 1rem !important; }
+.header-bar { background-color: var(--block-label-background-fill) !important; border-bottom: none !important; margin: 0 !important; padding: 0.35rem 0.5rem !important; border-top-left-radius: 8px !important; border-top-right-radius: 8px !important; border-bottom-left-radius: 0px !important; border-bottom-right-radius: 0px !important; }
+.header-bar p { text-align: center !important; font-size: 1.1em !important; font-weight: 600 !important; margin: 0 !important; color: var(--body-text-color) !important; }
 """
 
 with gr.Blocks(title="Autonomous Research Studio") as iface:
@@ -106,28 +110,32 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         )
         
         with gr.Group():
-            query_input = gr.Textbox(lines=3, placeholder="Enter your complex research brief here...", label="Research Brief")
+            gr.Markdown("Research Brief", elem_classes="header-bar")
+            query_input = gr.Textbox(lines=3, placeholder="Enter your complex research brief here...", show_label=False)
             with gr.Row():
                 submit_btn = gr.Button("Plan Research", variant="primary", scale=2, elem_classes="btn-green")
                 clear_btn = gr.Button("Clear", variant="secondary", scale=1, elem_classes="btn-red")
                 
+        gr.Markdown("<p class='subtitle-text' style='text-align: center; margin-bottom: 0px; padding-top: 0.5rem;'><em>Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute.</em></p>")
         with gr.Group() as approval_group:
-            gr.Markdown("### Research Plan\n*Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute.*")
+            gr.Markdown("Research Plan", elem_classes="header-bar")
             plan_editor = gr.Dataframe(
                 value=[["", "auto", ""]],
                 headers=["Task ID", "Source (auto/wikipedia/arxiv)", "Description"],
                 type="array",
                 column_count=(3, "fixed"),
-                column_widths=["10%", "35%", "55%"],
+                column_widths=["10%", "33%", "57%"],
                 interactive=True,
-                wrap=True
+                wrap=True,
+                show_label=False
             )
             with gr.Row():
                 approve_btn = gr.Button("Approve & Execute Plan", variant="primary", elem_classes="btn-green")
                 replan_btn = gr.Button("Regenerate Plan", variant="secondary", elem_classes="btn-blue")
 
-        gr.Markdown("### Output")
-        output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
+        with gr.Group():
+            gr.Markdown("Output", elem_classes="header-bar")
+            output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
         
         # Event listeners
         submit_btn.click(

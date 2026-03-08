@@ -76,8 +76,22 @@ def clear_ui():
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 
 custom_css = """
+:root {
+  --radius-xl: 8px;
+  --radius-lg: 8px;
+  --radius-md: 8px;
+  --radius-sm: 8px;
+  --block-radius: 8px;
+  --button-large-radius: 8px;
+  --button-small-radius: 8px;
+  --container-radius: 8px;
+  --input-radius: 8px;
+}
 .research-container { max-width: 800px !important; margin: 0 auto !important; padding-top: 2rem !important; }
 .output-markdown { padding: 1.5rem; border-radius: 8px; background-color: var(--background-fill-secondary); border: 1px solid var(--border-color-primary); min-height: 200px; }
+.btn-green:hover { background-image: none !important; background-color: #10b981 !important; border-color: #10b981 !important; color: white !important; }
+.btn-red:hover { background-image: none !important; background-color: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
+.btn-blue:hover { background-image: none !important; background-color: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; }
 """
 
 with gr.Blocks(title="Autonomous Research Studio") as iface:
@@ -94,8 +108,8 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         with gr.Group():
             query_input = gr.Textbox(lines=3, placeholder="Enter your complex research brief here...", label="Research Brief")
             with gr.Row():
-                submit_btn = gr.Button("1. Plan Research", variant="primary", scale=2)
-                clear_btn = gr.Button("Clear", variant="secondary", scale=1)
+                submit_btn = gr.Button("Plan Research", variant="primary", scale=2, elem_classes="btn-green")
+                clear_btn = gr.Button("Clear", variant="secondary", scale=1, elem_classes="btn-red")
                 
         with gr.Group() as approval_group:
             gr.Markdown("### Research Plan\n*Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute.*")
@@ -109,8 +123,8 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                 wrap=True
             )
             with gr.Row():
-                approve_btn = gr.Button("2. Approve & Execute Plan", variant="primary")
-                replan_btn = gr.Button("Regenerate Plan", variant="secondary")
+                approve_btn = gr.Button("Approve & Execute Plan", variant="primary", elem_classes="btn-green")
+                replan_btn = gr.Button("Regenerate Plan", variant="secondary", elem_classes="btn-blue")
 
         gr.Markdown("### Output")
         output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")

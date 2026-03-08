@@ -10,3 +10,4 @@ wikipedia
 arxiv
 fastapi
 uvicorn
+pandas

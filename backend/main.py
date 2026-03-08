@@ -12,6 +12,7 @@ class QueryRequest(BaseModel):
 
 class ApproveRequest(BaseModel):
     thread_id: str
+    plan: Optional[list] = None
 
 @app.post("/query")
 def run_query(request: QueryRequest):
@@ -41,6 +42,10 @@ def run_query(request: QueryRequest):
 def approve_plan(request: ApproveRequest):
     config = {"configurable": {"thread_id": request.thread_id}}
     
+    # If the user edited the plan on the frontend, update the graph state before resuming
+    if request.plan is not None:
+        workflow.update_state(config, {"plan": request.plan})
+        
     # Resume by passing None to the graph
     workflow.invoke(None, config=config)
     

@@ -6,12 +6,19 @@ def orchestrator_node(state: AgentState) -> dict:
     """Decomposes the user's research brief into actionable sub-tasks."""
     query = state["query"]
     
+    import random
+    salt = random.randint(1000, 9999)
+    # Adding a random salt instruction variation forces exactly deterministic local LLMs to re-sample
+    # their token distribution, yielding a completely different alternative plan.
+    
     prompt = f"""
+[Seed: {salt}]
 You are the Orchestrator for an Autonomous Research Studio.
 The user has provided the following research brief:
 "{query}"
 
-Your job is to decompose this brief into a list of specific, actionable search tasks.
+Your job is to decompose this brief into a list of highly creative, specific, and actionable search tasks.
+Explore diverse angles and deep nuances of the topic.
 Each task must have:
 - "id": A unique string ID (e.g. "task_1")
 - "description": The specific search query or data to find.
@@ -21,7 +28,7 @@ Respond ONLY with a valid JSON array of these task objects. Do not include markd
     """
     
     messages = [
-        {"role": "system", "content": "You output only strictly valid JSON arrays."},
+        {"role": "system", "content": "You output only strictly valid JSON arrays. Never output anything else."},
         {"role": "user", "content": prompt}
     ]
     

@@ -2,43 +2,59 @@ import gradio as gr
 import requests
 import os
 
-# Set local FastAPI backend URL base
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
-# To handle backward compatibility if user passed /query in env
 if API_URL.endswith("/query"):
     API_URL = API_URL.replace("/query", "")
+    
+def get_empty_df():
+    return []
 
 def run_query(query: str, thread_id: str):
     if not query.strip():
-        return "Please enter a query!", thread_id, gr.update(visible=False)
+        # Clear output
+        return [], thread_id, "Please enter a query!"
+        
+    # Force a completely new execution thread whenever a new plan is requested
+    # This prevents state corruption if the user clicks "Plan Research" mid-session.
+    thread_id = ""
         
     try:
-        response = requests.post(f"{API_URL}/query", json={"query": query, "thread_id": thread_id if thread_id else None})
+        response = requests.post(f"{API_URL}/query", json={"query": query, "thread_id": None})
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "requires_approval":
                 new_thread_id = data["thread_id"]
                 plan = data.get("plan", [])
                 
-                plan_md = "## 📋 Research Plan Generated\n*Review the Orchestrator's plan before spending API credits.*\n\n"
-                for i, t in enumerate(plan):
-                    plan_md += f"{i+1}. **[{t.get('source', 'auto').upper()}]** {t.get('description')}\n"
+                # Format plan into dataframe rows
+                df_data = [[t.get("id", f"task_{i}"), t.get("source", "auto"), t.get("description", "")] for i, t in enumerate(plan)]
                     
-                return plan_md, new_thread_id, gr.update(visible=True)
+                return df_data, new_thread_id, "_Review the generated plan below._"
             else:
-                return data.get("result", "Completed without output."), thread_id, gr.update(visible=False)
+                return [], thread_id, data.get("result", "Completed without output.")
         else:
-            return f"Error {response.status_code}: Could not process the query.", thread_id, gr.update(visible=False)
+            return [], thread_id, f"Error {response.status_code}: Could not process the query."
     except Exception as e:
-        return f"An error occurred: {str(e)}", thread_id, gr.update(visible=False)
+        return [], thread_id, f"An error occurred: {str(e)}"
 
-def approve_plan(thread_id: str):
+def approve_plan(thread_id: str, plan_df):
     if not thread_id:
         return "Error: No active session to approve.", gr.update(visible=False)
         
     try:
+        # Convert dataframe back to plan dicts
+        new_plan = []
+        for row in plan_df:
+            # Drop empty rows
+            if row[0] and row[2]:
+                source = str(row[1]).lower()
+                if source not in ["auto", "wikipedia", "arxiv"]:
+                    source = "auto" # Default fallback for invalid sources
+                new_plan.append({"id": row[0], "source": source, "description": row[2]})
+                
         yield "Executing Research Plan... This may take a minute as agents scrape and synthesize data...", gr.update(visible=False)
-        response = requests.post(f"{API_URL}/approve", json={"thread_id": thread_id})
+        
+        response = requests.post(f"{API_URL}/approve", json={"thread_id": thread_id, "plan": new_plan})
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "error":
@@ -50,72 +66,79 @@ def approve_plan(thread_id: str):
     except Exception as e:
         yield f"An error occurred: {str(e)}", gr.update(visible=False)
 
-def clear_ui():
-    return "", "_Results will appear here..._", "", gr.update(visible=False)
+def replan(query: str):
+    # Pass an empty thread to force a new execution graph
+    return run_query(query, "")
 
-# Theme
-custom_theme = gr.themes.Soft(
-    primary_hue="slate",
-    secondary_hue="gray",
-    neutral_hue="slate"
-)
+def clear_ui():
+    return "", "_Results will appear here..._", "", []
+
+custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 
 custom_css = """
 .research-container { max-width: 800px !important; margin: 0 auto !important; padding-top: 2rem !important; }
 .output-markdown { padding: 1.5rem; border-radius: 8px; background-color: var(--background-fill-secondary); border: 1px solid var(--border-color-primary); min-height: 200px; }
 """
 
-with gr.Blocks(title="Autonomous Research Studio", theme=custom_theme, css=custom_css) as iface:
-    # State variable to hold the LangGraph thread ID
+with gr.Blocks(title="Autonomous Research Studio") as iface:
     session_thread = gr.State("")
 
     with gr.Column(elem_classes="research-container"):
         gr.Markdown(
             """
             <h1 style="text-align: center;">Autonomous Research Studio</h1>
-            
             Welcome to the multi-agent research swarm. Submit a brief, review the Orchestrator's plan, and let the agents deep-scrape and synthesize a final dossier.
             """
         )
         
         with gr.Group():
-            query_input = gr.Textbox(
-                lines=3,
-                placeholder="Enter your complex research brief here...",
-                label="Research Brief"
-            )
-            
+            query_input = gr.Textbox(lines=3, placeholder="Enter your complex research brief here...", label="Research Brief")
             with gr.Row():
                 submit_btn = gr.Button("1. Plan Research", variant="primary", scale=2)
                 clear_btn = gr.Button("Clear", variant="secondary", scale=1)
                 
+        with gr.Group() as approval_group:
+            gr.Markdown("### Research Plan\n*Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute.*")
+            plan_editor = gr.Dataframe(
+                value=[["", "auto", ""]],
+                headers=["Task ID", "Source (auto/wikipedia/arxiv)", "Description"],
+                type="array",
+                column_count=(3, "fixed"),
+                column_widths=["10%", "35%", "55%"],
+                interactive=True,
+                wrap=True
+            )
+            with gr.Row():
+                approve_btn = gr.Button("2. Approve & Execute Plan", variant="primary")
+                replan_btn = gr.Button("Regenerate Plan", variant="secondary")
+
         gr.Markdown("### Output")
-        
-        output_display = gr.Markdown(
-            value="_Results will appear here..._", 
-            elem_classes="output-markdown"
-        )
-        
-        approve_btn = gr.Button("2. Approve & Execute Plan", variant="primary", visible=False)
+        output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
         
         # Event listeners
         submit_btn.click(
             fn=run_query,
             inputs=[query_input, session_thread],
-            outputs=[output_display, session_thread, approve_btn]
+            outputs=[plan_editor, session_thread, output_display]
+        )
+        
+        replan_btn.click(
+            fn=replan,
+            inputs=[query_input],
+            outputs=[plan_editor, session_thread, output_display]
         )
         
         approve_btn.click(
             fn=approve_plan,
-            inputs=[session_thread],
-            outputs=[output_display, approve_btn]
+            inputs=[session_thread, plan_editor],
+            outputs=[output_display]
         )
         
         clear_btn.click(
             fn=clear_ui,
             inputs=None,
-            outputs=[query_input, output_display, session_thread, approve_btn]
+            outputs=[query_input, output_display, session_thread, plan_editor]
         )
 
 if __name__ == "__main__":
-    iface.launch(server_name="0.0.0.0", pwa=True)
+    iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)

@@ -39,7 +39,7 @@ def run_query(query: str, thread_id: str):
 
 def approve_plan(thread_id: str, plan_df):
     if not thread_id:
-        return "Error: No active session to approve.", gr.update(visible=False)
+        return "Error: No active session to approve."
         
     try:
         # Convert dataframe back to plan dicts
@@ -52,19 +52,19 @@ def approve_plan(thread_id: str, plan_df):
                     source = "auto" # Default fallback for invalid sources
                 new_plan.append({"id": row[0], "source": source, "description": row[2]})
                 
-        yield "Executing Research Plan... This may take a minute as agents scrape and synthesize data...", gr.update(visible=False)
+        yield "Executing Research Plan... This may take a minute as agents scrape and synthesize data..."
         
         response = requests.post(f"{API_URL}/approve", json={"thread_id": thread_id, "plan": new_plan})
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "error":
-                yield data.get("message", f"Unexpected Error: {data}"), gr.update(visible=False)
+                yield data.get("message", f"Unexpected Error: {data}")
             else:
-                yield data.get("result", "Synthesis complete. (No result returned by Graph)"), gr.update(visible=False)
+                yield data.get("result", "Synthesis complete. (No result returned by Graph)")
         else:
-            yield f"Error {response.status_code}: Could not approve.", gr.update(visible=False)
+            yield f"Error {response.status_code}: Could not approve."
     except Exception as e:
-        yield f"An error occurred: {str(e)}", gr.update(visible=False)
+        yield f"An error occurred: {str(e)}"
 
 def replan(query: str):
     # Pass an empty thread to force a new execution graph

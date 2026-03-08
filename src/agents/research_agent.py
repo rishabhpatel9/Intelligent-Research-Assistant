@@ -2,7 +2,9 @@ from typing import TypedDict
 from src.config import load_config
 from src.llm_client import query_llm
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 from src.tools import search, summarize, factcheck, hybrid
+from src.agents.state import AgentState
 
 # Load environment variables (including LangSmith settings)
 load_config()
@@ -44,11 +46,7 @@ def classify_query(query: str) -> str:
         return "summarize"
     return classify_query_llm(query)
 
-# Define the state
-class AgentState(TypedDict):
-    query: str
-    category: str
-    result: str
+# State is now imported from src.agents.state
 
 def classify_node(state: AgentState) -> dict:
     query = state["query"]
@@ -72,6 +70,7 @@ def hybrid_node(state: AgentState) -> dict:
     return {"result": result}
 
 # Build the graph
+memory = MemorySaver()
 graph = StateGraph(AgentState)
 
 graph.add_node("classify", classify_node)
@@ -101,4 +100,4 @@ graph.add_edge("summarize", END)
 graph.add_edge("factcheck", END)
 graph.add_edge("hybrid", END)
 
-workflow = graph.compile()
+workflow = graph.compile(checkpointer=memory)

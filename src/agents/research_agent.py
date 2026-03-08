@@ -1,103 +1,65 @@
-from typing import TypedDict
-from src.config import load_config
-from src.llm_client import query_llm
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from src.tools import search, summarize, factcheck, hybrid
+from src.config import load_config
 from src.agents.state import AgentState
+from src.agents.nodes.orchestrator import orchestrator_node
+from src.agents.nodes.scout import scout_node
+from src.agents.nodes.reader import reader_node
+from src.agents.nodes.critic import critic_node
+from src.agents.nodes.synthesizer import synthesizer_node
 
-# Load environment variables (including LangSmith settings)
+# Load environment variables
 load_config()
 
-
-def classify_query_llm(query: str) -> str:
-    # Classify user query into exactly one category
-    messages = [
-        {"role": "system", "content": (
-            "You are a strict, precise query classifier. "
-            "Classify the user query into exactly ONE of these 4 categories: "
-            "'search', 'summarize', 'factcheck', 'hybrid'. "
-            "Rules:\n"
-            "- 'factcheck' : query asks whether something is true/false, requests verification, or asks 'Is it true that...'\n"
-            "- 'summarize' : query asks to condense, shorten, or summarize text that is provided or referenced\n"
-            "- 'hybrid' : query asks for deep comparison, pros/cons, or complex analysis across multiple facets\n"
-            "- 'search' : query asks for general knowledge, current events, latest info, 'who', 'what', or 'when'\n"
-            "CRITICAL: Respond ONLY with the exact single word matching the category ('search', 'summarize', 'factcheck', or 'hybrid'). Do not include any punctuation or extra text."
-        )},
-        {"role": "user", "content": query}
-    ]
-
-    result = query_llm(messages)
-    # Normalize output
-    category = result.strip().lower()
-    
-    if "factcheck" in category:
-        return "factcheck"
-    elif "summarize" in category:
-        return "summarize"
-    elif "hybrid" in category:
-        return "hybrid"
-    
-    return "search"
-
-def classify_query(query: str) -> str:
-    # Force summarize for long queries to avoid search API errors
-    if len(query.split()) > 50:
-        return "summarize"
-    return classify_query_llm(query)
-
-# State is now imported from src.agents.state
-
-def classify_node(state: AgentState) -> dict:
-    query = state["query"]
-    category = classify_query(query)
-    return {"category": category}
-
-def search_node(state: AgentState) -> dict:
-    result = search.run(state["query"])
-    return {"result": result}
-
-def summarize_node(state: AgentState) -> dict:
-    result = summarize.run(state["query"])
-    return {"result": result}
-
-def factcheck_node(state: AgentState) -> dict:
-    result = factcheck.run(state["query"])
-    return {"result": result}
-
-def hybrid_node(state: AgentState) -> dict:
-    result = hybrid.run(state["query"])
-    return {"result": result}
-
-# Build the graph
-memory = MemorySaver()
+# Build the Graph
 graph = StateGraph(AgentState)
 
-graph.add_node("classify", classify_node)
-graph.add_node("search", search_node)
-graph.add_node("summarize", summarize_node)
-graph.add_node("factcheck", factcheck_node)
-graph.add_node("hybrid", hybrid_node)
+# Add Nodes
+graph.add_node("orchestrator", orchestrator_node)
+graph.add_node("scout", scout_node)
+graph.add_node("reader", reader_node)
+graph.add_node("critic", critic_node)
+graph.add_node("synthesizer", synthesizer_node)
 
-graph.set_entry_point("classify")
+# Define Entry Point
+graph.set_entry_point("orchestrator")
 
-def route_query(state: AgentState) -> str:
-    return state["category"]
+# Define edges
+graph.add_edge("orchestrator", "scout")
+graph.add_edge("scout", "reader")
+graph.add_edge("reader", "critic")
+
+def route_critic(state: AgentState) -> str:
+    """
+    If the Critic rejected a task, it removed it from 'completed_tasks'.
+    If all tasks in the 'plan' are in 'completed_tasks', then everything 
+    has passed the Critic's checks and we can synthesize. Otherwise, loop back.
+    """
+    plan = state.get("plan", [])
+    completed_tasks = state.get("completed_tasks", [])
+    
+    # Check if we have a plan and all tasks have been completed and passed (id is in completed_tasks)
+    if len(plan) > 0 and len(completed_tasks) == len(plan):
+        return "synthesizer"
+    
+    # Otherwise, loop back to the scout to fetch the missing/failed data
+    return "scout"
 
 graph.add_conditional_edges(
-    "classify",
-    route_query,
+    "critic",
+    route_critic,
     {
-        "search": "search",
-        "summarize": "summarize",
-        "factcheck": "factcheck",
-        "hybrid": "hybrid",
+        "synthesizer": "synthesizer",
+        "scout": "scout"
     }
 )
 
-graph.add_edge("search", END)
-graph.add_edge("summarize", END)
-graph.add_edge("factcheck", END)
-graph.add_edge("hybrid", END)
+graph.add_edge("synthesizer", END)
 
-workflow = graph.compile(checkpointer=memory)
+# Compile the Graph
+memory = MemorySaver()
+
+# interrupt_before=["scout"] adds Human-In-The-Loop. 
+# The graph execution will pause before the 'scout' node runs for the first time,
+# allowing the user to review the state["plan"] generated by the Orchestrator.
+workflow = graph.compile(checkpointer=memory, interrupt_before=["scout"])

@@ -87,7 +87,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         gr.Markdown(
             """
             <h1 style="text-align: center;">Autonomous Research Studio</h1>
-            Welcome to the multi-agent research swarm. Submit a brief, review the Orchestrator's plan, and let the agents deep-scrape and synthesize a final dossier.
+            Welcome to the multi-agent research swarm. Submit a brief, review the Orchestrator's plan, and let the agents deep scrape and synthesize a final report.
             """
         )
         

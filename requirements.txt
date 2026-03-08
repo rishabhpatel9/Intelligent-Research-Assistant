@@ -7,4 +7,7 @@ python-dotenv
 beautifulsoup4
 duckduckgo-search
 wikipedia
+duckduckgo-search
+wikipedia
 arxiv
+pandas

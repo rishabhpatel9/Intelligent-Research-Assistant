@@ -1,20 +1,19 @@
-# Intelligent Research Assistant
+# Intelligent Research Assistant (Autonomous Research Studio)
 
-A GenAI powered intelligent agent that dynamically automates complex research workflows by intelligently searching, summarizing, fact checking, and synthesizing information.
+An advanced multi-agent swarm that automates deep research workflows through complex reasoning, multi-hop web scraping, and human-in-the-loop plan execution.
 
 ## Overview
 
-I built this platform to automate complex research workflows and make deep analysis accessible. Instead of just answering basic questions, it acts as a local first intelligent agent that dynamically figures out how to solve a problem. When given a request, the system analyzes the input at runtime to choose the best strategy: searching the web for live data, compressing dense documents into summaries, rigorously fact checking claims, or combining multiple approaches for a deep synthesis.
+I built this platform to automate complex research workflows and make deep analysis accessible. Instead of a simple single shot query system, it acts as a persistent **Autonomous Research Studio** leveraging a multi-agent swarm. When given a request, an Orchestrator agent dynamically breaks down the problem into a sequential plan consisting of actionable sub-tasks. The system then automatically scouts for information using an omni search strategy, reads and scrapes web pages deeply, and actively critiques its own findings, looping back to search again if the gathered data is insufficient.
 
 ## Core Features & Capabilities
 
-* **Dynamic Query Routing:** The core interaction loop is governed by an intelligent classifier that accurately routes requests to specialized modules based on user intent.
-  * **Search Module:** Specialized for retrieving current, latest, or recent information directly from web sources.
-  * **Summarize Module:** Built for condensing long texts, documents, or PDFs. If you don't have enough data on the topic, the system will look up relevant information online and then summarize it for you.
-  * **Fact Check Module:** Dedicated to rigorous verification of claims using trusted references.
-  * **Hybrid Workflow:** Combines search, summary, and fact-checking to tackle complicated, multi-part questions.
-* **Structured, Publication-Ready Output:** The assistant automatically formats its intelligence into polished reports incorporating executive summaries, bulleted insights, tables for data-heavy concepts, and strict citations to ensure credibility.
-* **Progressive Web App (PWA) Frontend:** Our refined Gradio interface provides a modern, responsive, and application-like experience. The UI features a carefully crafted "Soft" theme with slate and gray aesthetics, an optimized reading layout, and Markdown-rendered outputs.
+* **Multi-Agent Swarm Architecture:** The monolithic structure is broken down into persistent, specialized nodes (Orchestrator, Scout, Reader, Critic, Synthesizer) capable of deep, multi-hop reasoning.
+* **Human-in-the-Loop (HITL) Execution:** The frontend features an interactive Research Plan data grid allowing users to review, edit, and approve the Orchestrator's execution strategy *before* any heavy scraping or API credits are consumed.
+* **Omni-Search & Caching Strategy:** Integrates Wikipedia, ArXiv, and DuckDuckGo capabilities to prioritize high quality, free data sources, backed by an SQLite cache layer to instantly return data for repeated queries across sessions.
+* **Dynamic ReAct Critic:** A Critic node evaluates gathered data against the original task, acting as a dynamic ReAct loop that automatically generates refined follow up queries if the data is insufficient.
+* **Structured, Publication-Ready Output:** The Synthesizer agent gathers all structured intelligence and transforms it into a beautifully formatted Markdown report with an Executive Summary and strict, verifiable source citations.
+* **Progressive Web App (PWA) Frontend:** The refined Gradio interface provides a modern, responsive, and application like experience. The UI features custom rounded components, a carefully crafted theme, and an optimized reading layout.
 
 ## Technology Stack
 
@@ -38,45 +37,51 @@ This project leverages a modern, highly optimized technology stack:
                                      │
                                      ▼
                        ┌───────────────────────────┐
-                       │   Query Classifier        │
-                       │   (fact-check, search,    │
-                       │   summarize, hybrid)      │
+                       │   Orchestrator Node       │
+                       │   (Creates Research Plan, │
+                       │    breaks into tasks)     │
                        └─────────────┬─────────────┘
                                      │
                                      ▼
                        ┌───────────────────────────┐
-                       │   LangGraph Orchestration │
-                       │   (runtime branching,     │
-                       │   multi-step workflows)   │
-                       └─────────────┬─────────────┘
-                                     │
-        ┌──────────────────┬─────────┴────────┬──────────────────┐
-        ▼                  ▼                  ▼                  ▼
-┌────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
-│ Search Module  │ │ Summarization  │ │ Fact-Check     │ │ Hybrid Workflow│
-│ (web sources)  │ │ (docs, PDFs)   │ │ (trusted refs) │ │ (combine paths)│
-└───────┬────────┘ └───────┬────────┘ └───────┬────────┘ └───────┬────────┘
-        │                  │                  │                  │
-        └────────────────┬─┴─────────┬────────┴─┬────────────────┘
-                         ▼           ▼          ▼
-                       ┌───────────────────────────┐
-                       │   LangSmith Evaluation    │
-                       │   (trace reasoning,       │
-                       │   debug, metrics)         │
+                       │Human-In-The-Loop Approval │
+                       │(Review, edit, or approve  │
+                       │ the generated plan in UI) │
                        └─────────────┬─────────────┘
                                      │
                                      ▼
                        ┌───────────────────────────┐
-                       │   Structured Output Gen   │
-                       │   (summary, bullets,      │
-                       │   tables, citations)      │
+                       │   Scout Node              │◄───┐
+                       │   (Executes searches via  │    │
+                       │    cache/omni-search)     │    │
+                       └─────────────┬─────────────┘    │
+                                     │                  │
+                                     ▼                  │
+                       ┌───────────────────────────┐    │
+                       │   Reader Node             │    │
+                       │   (Deep web scraping and  │    │
+                       │    content extraction)    │    │
+                       └─────────────┬─────────────┘    │
+                                     │                  │
+                                     ▼                  │
+                       ┌───────────────────────────┐    │
+                       │   Critic Node             │    │
+                       │   (Evaluates findings;    │────┘
+                       │    loops back if lacking) │(Refined Queries)
+                       └─────────────┬─────────────┘
+                                     │ (Passed all checks)
+                                     ▼
+                       ┌───────────────────────────┐
+                       │   Synthesizer Node        │
+                       │   (Generates citations,   │
+                       │    Markdown report)       │
                        └─────────────┬─────────────┘
                                      │
                                      ▼
                        ┌───────────────────────────┐
                        │   Gradio Frontend Report  │
-                       │   (executive summary,     │
-                       │   recruiter-facing polish)│
+                       │   (Executive summary and  │
+                       │    final output rendered) │
                        └───────────────────────────┘
 ```
 
@@ -184,9 +189,7 @@ docker-compose down
 ## Future Improvements & Roadmap
 
 To further elevate this Intelligent Research Assistant and deliver unparalleled value, the following features are planned:
-- **Autonomous Research Studio**: Transitioning from a single shot router to an asynchronous, multi-hop agent swarm (Orchestrator, Scout, Critic, Synthesizer) that autonomously plans, executes, and self corrects complex research briefs.
-- **Omni-Search Engine Strategy**: Implementing a redundant, cost optimized 4 layer search hierarchy (LLM Logic & caching -> Free APIs like DuckDuckGo/Wikipedia/ArXiv -> Deep Scrapers -> Premium Fallback) to massively reduce search API costs.
-- **Human-in-the-Loop (HITL)**: Enabling users to review, edit, or approve the generated Research Execution Plan before the agent swarm consumes time and API credits.
+- **Visual Graph & Agent Tracing**: An upcoming UI sidebar that visually displays real-time agent "thinking" and tracks how LangGraph execution graphs are traversed natively in the browser.
 - **Multi-Agent Debates**: Implementing a reviewer/supervisor agent that debates and critiques the primary agent's findings to ensure maximum rigor.
 - **Deep Persistent Memory**: Allowing the system to remember insights from past queries to build a personalized knowledge graph over time.
 - **Multimodal Extraction**: Enabling the system to process not just text, but also images, charts, and diagrams from PDFs or web pages during its fact checking and summarization phases.

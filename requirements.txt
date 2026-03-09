@@ -11,3 +11,4 @@ arxiv
 fastapi
 uvicorn
 pandas
+json-repair

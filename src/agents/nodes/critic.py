@@ -1,12 +1,12 @@
-import json
 from src.llm_client import query_llm
 from src.agents.state import AgentState
+from src.utils.json_utils import parse_json_robustly
 
 def critic_node(state: AgentState) -> dict:
     # Evaluates if the collected findings are sufficient for a given task.
-    plan = state.get("plan", [])
-    findings = state.get("research_findings", [])
-    completed_tasks = state.get("completed_tasks", [])
+    plan = state.get("plan") or []
+    findings = state.get("research_findings") or []
+    completed_tasks = state.get("completed_tasks") or []
     
     new_plan = list(plan) # Copy plan to safely modify
     
@@ -27,16 +27,22 @@ def critic_node(state: AgentState) -> dict:
         
         prompt = f"""
 You are the Critic in an Autonomous Research Studio.
-Your job is to evaluate if the gathered data is sufficient to satisfy the research task.
+Your job is to objectively evaluate if the gathered data is sufficient to satisfy the research task.
 
 Task Description: "{description}"
-Gathered Data: "{data[:2000]}..."
+Gathered Data (snippet):
+{data[:3000]}
+
+Evaluation Criteria:
+1. Does the data contain specific facts, figures, or answers requested in the task?
+2. Is the source credible?
+3. If the data is mostly navigation links or generic errors, set "pass" to false.
 
 Respond ONLY with a valid JSON object:
 {{
     "pass": true or false,
-    "reason": "short explanation",
-    "follow_up_query": "If pass is false, provide a more specific Google search query to find the missing data. If true, set to null."
+    "reason": "Detailed explanation of why it passed or failed",
+    "follow_up_query": "If pass is false, provide a highly specific Google search query to find the missing data. If true, set to null."
 }}
 """
         messages = [
@@ -46,17 +52,13 @@ Respond ONLY with a valid JSON object:
         
         try:
             response = query_llm(messages)
-            cleaned = response.strip()
-            if cleaned.startswith("```json"): cleaned = cleaned[7:]
-            elif cleaned.startswith("```"): cleaned = cleaned[3:]
-            if cleaned.endswith("```"): cleaned = cleaned[:-3]
-            
-            eval_result = json.loads(cleaned.strip())
+            eval_result = parse_json_robustly(response)
             
             task_finding["evaluated"] = True
             task_finding["pass"] = eval_result.get("pass", True)
+            task_finding["reason"] = eval_result.get("reason", "No reason provided.")
             
-            print(f"[Critic] Task {task_id} Eval: PASS={task_finding['pass']} | Reason: {eval_result.get('reason')}")
+            print(f"[Critic] Task {task_id} Eval: PASS={task_finding['pass']} | Reason: {task_finding['reason']}")
             
             if not task_finding["pass"]:
                 # The Critic rejected it. We must loop back.
@@ -72,5 +74,13 @@ Respond ONLY with a valid JSON object:
             print(f"[Critic] Failed to evaluate {task_id}: {e}")
             task_finding["evaluated"] = True
             task_finding["pass"] = True # Default to pass if LLM fails formatting to prevent infinite loop
+            task_finding["reason"] = f"Evaluation failed error: {str(e)}"
+
             
-    return {"plan": new_plan} # Return updated plan (with modified queries if failed). completed_tasks was updated by reference but LangGraph handles it.
+    node_logs = []
+    for f in findings:
+        if f.get("evaluated") and "pass" in f:
+            status = "PASSED" if f["pass"] else "FAILED"
+            node_logs.append(f"Critic: Task {f['task_id']} {status}. Reason: {f.get('reason', 'N/A')}")
+
+    return {"plan": new_plan, "logs": node_logs}

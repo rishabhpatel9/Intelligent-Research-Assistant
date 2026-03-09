@@ -1,6 +1,6 @@
-import json
 from src.llm_client import query_llm
 from src.agents.state import AgentState
+from src.utils.json_utils import parse_json_robustly
 
 def orchestrator_node(state: AgentState) -> dict:
     """Decomposes the user's research brief into actionable sub-tasks."""
@@ -14,38 +14,39 @@ def orchestrator_node(state: AgentState) -> dict:
     prompt = f"""
 [Seed: {salt}]
 You are the Orchestrator for an Autonomous Research Studio.
-The user has provided the following research brief:
-"{query}"
+The user's research brief is: "{query}"
 
-Your job is to decompose this brief into a list of highly creative, specific, and actionable search tasks.
-Explore diverse angles and deep nuances of the topic.
+Decompose this brief into a few (3-5) high-quality, focused, and actionable search tasks.
+Focus on directly answering the user's question. Avoid redundant or overly broad queries.
+
 Each task must have:
 - "id": A unique string ID (e.g. "task_1")
-- "description": The specific search query or data to find.
-- "source": The preferred search source. Choose from: ["auto", "wikipedia", "arxiv"]. Use wikipedia for entities/history, arxiv for scientific/CS papers, and auto for general web.
+- "description": The specific search query.
+- "source": Choose from: ["auto", "wikipedia", "arxiv"]. Use wikipedia for entities, arxiv for science/CS, and auto for general web.
 
-Respond ONLY with a valid JSON array of these task objects. Do not include markdown formatting or other text.
+Return ONLY a valid JSON array. Ensure correct JSON syntax.
     """
     
     messages = [
-        {"role": "system", "content": "You output only strictly valid JSON arrays. Never output anything else."},
+        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON arrays. Do not escape double quotes unless they are part of the text CONTENT itself."},
         {"role": "user", "content": prompt}
     ]
     
-    response = query_llm(messages)
-    
     try:
-        cleaned = response.strip()
-        if cleaned.startswith("```json"): cleaned = cleaned[7:]
-        elif cleaned.startswith("```"): cleaned = cleaned[3:]
-        if cleaned.endswith("```"): cleaned = cleaned[:-3]
-            
-        plan = json.loads(cleaned.strip())
+        response = query_llm(messages)
+        plan = parse_json_robustly(response)
+        
         if not isinstance(plan, list):
-            plan = []
+            # Try to see if it's an object with a 'tasks' key or similar
+            if isinstance(plan, dict):
+                for key in ["tasks", "plan", "subtasks"]:
+                    if key in plan and isinstance(plan[key], list):
+                        plan = plan[key]
+                        break
+            if not isinstance(plan, list):
+                plan = []
     except Exception as e:
         print(f"Failed to parse orchestrator JSON. Error: {e}\nRaw Response: {response}")
-        # Fallback single-step plan
         plan = [{"id": "task_1", "description": query, "source": "auto"}]
         
-    return {"plan": plan}
+    return {"plan": plan, "logs": [f"Orchestrator: Generated a {len(plan)}-task research plan."]}

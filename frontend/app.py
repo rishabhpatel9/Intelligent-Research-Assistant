@@ -99,11 +99,17 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                     yield "_Synthesis in progress... Listening to agents..._", messages
                                 
                                 elif event == "step_log":
-                                    # Append log to the current thinking step
+                                    # Append each log entry as a new message so that
+                                    # Gradio's autoscroll (which triggers on new messages)
+                                    # keeps the Thinking Log pinned to the latest update.
                                     if messages and messages[-1]["role"] == "assistant":
-                                        current_content = messages[-1]["content"]
                                         log_entry = data.get("log", "")
-                                        messages[-1]["content"] = (current_content + "\n" + f"↳ {log_entry}").strip()
+                                        step_title = messages[-1]["metadata"].get("title", "Agent processing...")
+                                        messages.append({
+                                            "role": "assistant",
+                                            "content": f"↳ {log_entry}",
+                                            "metadata": {"title": step_title, "status": "pending"}
+                                        })
                                         yield "_Synthesis in progress... Listening to agents..._", messages
                                         
                                 elif data.get("status") == "completed":

@@ -53,16 +53,21 @@ async def approve_plan(request: ApproveRequest):
         workflow.update_state(config, {"plan": request.plan})
         
     def event_generator():
+        active_node: Optional[str] = None
         try:
             # Stream the events from the compiled LangGraph workflow
             # Using stream_mode="values" or "updates"
             for chunk in workflow.stream(None, config=config, stream_mode="updates"):
-                if chunk:
-                    node_name = list(chunk.keys())[0]
-                    node_data = chunk[node_name]
-                    
-                    # 1. Yield the generic "starting" message as a step_start event
-                    event_type = "step_start"
+                if not chunk or not isinstance(chunk, dict):
+                    continue
+
+                for node_name, node_data in chunk.items():
+                    if not isinstance(node_name, str):
+                        continue
+                    if node_name in {"__end__", "__interrupt__"}:
+                        continue
+
+                    # 1) Emit step_start only when node changes (prevents duplicates for generator yields)
                     msg = f"Agent '{node_name.capitalize()}' is processing..."
                     if node_name == "scout":
                         msg = "Searching for background info..."
@@ -72,14 +77,21 @@ async def approve_plan(request: ApproveRequest):
                         msg = "Verifying if data fulfills the plan..."
                     elif node_name == "synthesizer":
                         msg = "Drafting the final report..."
-                    
-                    yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
-                    
-                    # 2. Yield any detailed logs returned by the node itself
+
+                    if node_name != active_node:
+                        active_node = node_name
+                        yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
+
+                    # 2) Emit any detailed logs returned by the node itself
                     if isinstance(node_data, dict) and "logs" in node_data:
                         logs = node_data.get("logs") or []
-                        for log_entry in logs:
-                            yield f"data: {json.dumps({'event': 'step_log', 'node': node_name, 'log': log_entry})}\n\n"
+                        if isinstance(logs, str):
+                            logs = [logs]
+                        if isinstance(logs, list):
+                            for log_entry in logs:
+                                if log_entry is None:
+                                    continue
+                                yield f"data: {json.dumps({'event': 'step_log', 'node': node_name, 'step_title': msg, 'log': str(log_entry)})}\n\n"
                     
             state = workflow.get_state(config)
             vals = state.values or {}

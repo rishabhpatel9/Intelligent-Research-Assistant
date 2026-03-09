@@ -62,6 +62,7 @@ def approve_plan(thread_id: str, plan_df, current_messages):
 
     # Use existing messages from Orchestrator
     messages = list(current_messages) if current_messages else []
+    current_step_title = None
     
     yield "_Research in progress... Results will appear here shortly._", messages, ""
 
@@ -95,29 +96,21 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                             m["metadata"]["status"] = "done"
 
                                     step_title = data.get("message", "Agent processing...")
-
-                                    # Avoid creating duplicate consecutive steps with the same title
-                                    if not messages or messages[-1].get("metadata", {}).get("title") != step_title:
-                                        messages.append({
-                                            "role": "assistant",
-                                            "content": "",
-                                            "metadata": {"title": step_title, "status": "pending"}
-                                        })
+                                    current_step_title = step_title
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
                                     # Append each log entry as a new message so that
                                     # Gradio's autoscroll (which triggers on new messages)
                                     # keeps the Thinking Log pinned to the latest update.
-                                    if messages and messages[-1]["role"] == "assistant":
-                                        log_entry = data.get("log", "")
-                                        step_title = messages[-1]["metadata"].get("title", "Agent processing...")
-                                        messages.append({
-                                            "role": "assistant",
-                                            "content": f"↳ {log_entry}",
-                                            "metadata": {"title": step_title, "status": "pending"}
-                                        })
-                                        yield "_Synthesis in progress... Listening to agents..._", messages, ""
+                                    log_entry = data.get("log", "")
+                                    step_title = data.get("step_title") or current_step_title or "Agent processing..."
+                                    messages.append({
+                                        "role": "assistant",
+                                        "content": f"↳ {log_entry}",
+                                        "metadata": {"title": step_title, "status": "pending"}
+                                    })
+                                    yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
                                 elif data.get("status") == "completed":
                                     # Mark all assistant messages as done once the run completes

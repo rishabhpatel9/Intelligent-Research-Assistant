@@ -64,7 +64,16 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
             plan = validated_plan
 
     except Exception as e:
-        print(f"Failed to parse orchestrator JSON. Error: {e}")
+        raw = ""
+        try:
+            raw = str(response) if "response" in locals() else ""
+        except Exception:
+            raw = ""
+
+        details = f"Orchestrator: Failed to generate/parse plan ({type(e).__name__}: {e})."
+        if raw:
+            details += f" Raw response (truncated): {raw[:800]}"
+        yield {"logs": [details]}
         plan = []
 
     # Final fallback: if no valid tasks were generated, use the original query as a single task

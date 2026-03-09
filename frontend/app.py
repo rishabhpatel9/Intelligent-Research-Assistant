@@ -51,16 +51,18 @@ import json
 
 def approve_plan(thread_id: str, plan_df, current_messages):
     """Approve the plan and stream log messages from the backend.
-    Yields a tuple (final_result, messages) for Gradio to update both components.
+    Yields (final_result, messages, scroll_html) for Gradio to update components.
+    The scroll_html field is used to trigger a smooth scroll to the output
+    section only once the final result is ready.
     """
     if not thread_id:
-        yield "", current_messages
+        yield "", current_messages, ""
         return
 
     # Use existing messages from Orchestrator
     messages = list(current_messages) if current_messages else []
     
-    yield "_Research in progress... Results will appear here shortly._", messages
+    yield "_Research in progress... Results will appear here shortly._", messages, ""
 
     try:
         new_plan = []
@@ -86,17 +88,21 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                 event = data.get("event")
                                 
                                 if event == "step_start":
-                                    # Mark previous step as done
-                                    if messages and messages[-1]["role"] == "assistant":
-                                        messages[-1]["metadata"]["status"] = "done"
-                                    
-                                    # Add new thinking step
-                                    messages.append({
-                                        "role": "assistant",
-                                        "content": "",
-                                        "metadata": {"title": data.get("message", "Agent processing..."), "status": "pending"}
-                                    })
-                                    yield "_Synthesis in progress... Listening to agents..._", messages
+                                    # Mark previous assistant messages as done before starting a new step
+                                    for m in messages:
+                                        if m.get("role") == "assistant" and m.get("metadata", {}).get("status") == "pending":
+                                            m["metadata"]["status"] = "done"
+
+                                    step_title = data.get("message", "Agent processing...")
+
+                                    # Avoid creating duplicate consecutive steps with the same title
+                                    if not messages or messages[-1].get("metadata", {}).get("title") != step_title:
+                                        messages.append({
+                                            "role": "assistant",
+                                            "content": "",
+                                            "metadata": {"title": step_title, "status": "pending"}
+                                        })
+                                    yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
                                     # Append each log entry as a new message so that
@@ -108,29 +114,42 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                         messages.append({
                                             "role": "assistant",
                                             "content": f"↳ {log_entry}",
-                                            "metadata": {"title": step_title, "status": "pending"}
+                                            # Log entries themselves are instantaneous; mark them done
+                                            # so they don't show a persistent processing spinner.
+                                            "metadata": {"title": step_title, "status": "done"}
                                         })
-                                        yield "_Synthesis in progress... Listening to agents..._", messages
+                                        yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
                                 elif data.get("status") == "completed":
-                                    if messages and messages[-1]["role"] == "assistant":
-                                        messages[-1]["metadata"]["status"] = "done"
+                                    # Mark all assistant messages as done once the run completes
+                                    for m in messages:
+                                        if m.get("role") == "assistant":
+                                            m.setdefault("metadata", {})
+                                            m["metadata"]["status"] = "done"
                                     
                                     final_res = data.get("result", "")
-                                    yield final_res, messages
+                                    scroll_script = """
+                                    <script>
+                                    const el = document.getElementById("output-section");
+                                    if (el) {
+                                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    }
+                                    </script>
+                                    """
+                                    yield final_res, messages, scroll_script
                                     
                                 elif data.get("status") == "error":
                                     err_msg = data.get("message", "Unknown error")
-                                    messages.append({"role": "assistant", "content": f"Error: {err_msg}", "metadata": {"title": "❌ System Error"}})
-                                    yield f"An error occurred: {err_msg}", messages
+                                    messages.append({"role": "assistant", "content": f"Error: {err_msg}", "metadata": {"title": "System Error"}})
+                                    yield f"An error occurred: {err_msg}", messages, ""
                             except json.JSONDecodeError:
                                 continue
             else:
-                messages.append({"role": "assistant", "content": f"Connection Error: Status {response.status_code}", "metadata": {"title": "❌ Connection Error"}})
-                yield f"Error {response.status_code}: Could not connect to backend.", messages
+                messages.append({"role": "assistant", "content": f"Connection Error: Status {response.status_code}", "metadata": {"title": "Connection Error"}})
+                yield f"Error {response.status_code}: Could not connect to backend.", messages, ""
     except Exception as e:
-        messages.append({"role": "assistant", "content": str(e), "metadata": {"title": "❌ Exception"}})
-        yield f"An error occurred: {str(e)}", messages
+        messages.append({"role": "assistant", "content": str(e), "metadata": {"title": "Exception"}})
+        yield f"An error occurred: {str(e)}", messages, ""
 
 def replan(query: str):
     # Pass an empty thread to force a new execution graph
@@ -218,9 +237,10 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                         elem_classes="log-sidebar"
                     )
 
-        with gr.Group():
+        with gr.Group(elem_id="output-section"):
             gr.Markdown("Output", elem_classes="header-bar")
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
+            scroll_helper = gr.HTML(visible=False)
     # Event listeners
     submit_btn.click(
         fn=run_query,
@@ -237,7 +257,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     approve_btn.click(
         fn=approve_plan,
         inputs=[session_thread, plan_editor, log_output],
-        outputs=[output_display, log_output],
+        outputs=[output_display, log_output, scroll_helper],
         scroll_to_output=True
     )
     clear_btn.click(

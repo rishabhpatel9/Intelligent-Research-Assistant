@@ -51,8 +51,9 @@ def search_duckduckgo(query: str) -> str:
 
 def search_wikipedia(query: str) -> str:
     try:
-        # Get top 2 sentences of summary
-        summary = wikipedia.summary(query, sentences=3, auto_suggest=False)
+        # Get a short summary from Wikipedia. Allow auto_suggest/redirect to
+        # make this more robust to slight query wording differences.
+        summary = wikipedia.summary(query, sentences=3, auto_suggest=True, redirect=True)
         return f"- Wikipedia: {query}\n  {summary}"
     except Exception:
         return None
@@ -84,7 +85,6 @@ def search_tavily(query: str) -> str:
         return None
 
 def run(query: str, source="auto") -> str:
-    
     # Omni-Search implementation. Source options: auto, duckduckgo, wikipedia, arxiv, tavily
     # Check cache first
     cached = get_cache(query, source)
@@ -95,9 +95,18 @@ def run(query: str, source="auto") -> str:
     applied_source = source
 
     if source == "wikipedia":
+        # Prefer Wikipedia, but gracefully fall back to DuckDuckGo if the
+        # direct API lookup fails (e.g., disambiguation, network issues).
         result = search_wikipedia(query)
+        if not result:
+            applied_source = "duckduckgo"
+            result = search_duckduckgo(query)
     elif source == "arxiv":
+        # Prefer ArXiv, but fall back to DuckDuckGo with a bias toward papers.
         result = search_arxiv(query)
+        if not result:
+            applied_source = "duckduckgo"
+            result = search_duckduckgo(f"{query} arxiv")
     elif source == "tavily":
         result = search_tavily(query)
     elif source == "duckduckgo":

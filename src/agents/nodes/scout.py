@@ -1,7 +1,7 @@
 from src.agents.state import AgentState
 from src.tools.search import run as omni_search
 
-def scout_node(state: AgentState):
+def scout_node(state: AgentState) -> dict:
     # Executes the research plan using the Omni_Search tool.
     plan = state.get("plan") or []
     completed_tasks = state.get("completed_tasks") or []
@@ -17,7 +17,7 @@ def scout_node(state: AgentState):
         description = task.get("description")
         source = task.get("source", "auto")
         
-        yield {"logs": [f"Scout: Investigating '{description}' via {source}..."]}
+        print(f"[Scout] Executing query: '{description}' via source: {source}")
         
         try:
             raw_result = omni_search(description, source=source)
@@ -31,11 +31,10 @@ def scout_node(state: AgentState):
             new_completed.append(task_id)
         except Exception as e:
             print(f"[Scout] Error executing task {task_id}: {e}")
-            yield {"logs": [f"Scout: Error investigating '{task_id}': {str(e)}"]}
+            # Do not mark as complete if there's a hard crash, Critics might retry
             
-    yield {
-        "research_findings": new_findings, 
-        "completed_tasks": new_completed, 
-        "logs": [f"Scout: Completed {len(new_completed)} research tasks."]
-    }
-
+    node_logs = []
+    for f in new_findings:
+        node_logs.append(f"Scout: Investigated '{f['query']}' via {f['source']}.")
+        
+    return {"research_findings": new_findings, "completed_tasks": new_completed, "logs": node_logs}

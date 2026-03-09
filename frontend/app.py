@@ -105,22 +105,24 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
-                                    # Append each log entry as a new message so that
-                                    # Gradio's autoscroll (which triggers on new messages)
-                                    # keeps the Thinking Log pinned to the latest update.
+                                    # Append log lines to the current thinking step's content so that
+                                    # they remain visually nested under the step's collapsible header.
                                     if messages and messages[-1]["role"] == "assistant":
                                         log_entry = data.get("log", "")
-                                        # Use an empty title for log lines so we don't
-                                        # duplicate the step header (e.g. "Drafting the final report")
-                                        # in the Visibly Thinking UI.
-                                        messages.append({
-                                            "role": "assistant",
-                                            "content": f"↳ {log_entry}",
-                                            # Log entries themselves are instantaneous; mark them done
-                                            # so they don't show a persistent processing spinner.
-                                            "metadata": {"title": "", "status": "done"}
-                                        })
-                                        yield "_Synthesis in progress... Listening to agents..._", messages, ""
+                                        current_content = messages[-1].get("content", "")
+                                        messages[-1]["content"] = (current_content + "\n" + f"↳ {log_entry}").strip()
+
+                                        # Inject script to keep the Thinking Log scrolled to the newest content.
+                                        scroll_script = """
+                                        <script>
+                                        const cols = document.getElementsByClassName("log-sidebar");
+                                        if (cols.length) {
+                                          const el = cols[0];
+                                          el.scrollTop = el.scrollHeight;
+                                        }
+                                        </script>
+                                        """
+                                        yield "_Synthesis in progress... Listening to agents..._", messages, scroll_script
                                         
                                 elif data.get("status") == "completed":
                                     # Mark all assistant messages as done once the run completes

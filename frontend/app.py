@@ -10,9 +10,10 @@ def get_empty_df():
     return []
 
 def run_query(query: str, thread_id: str):
-    if not query.strip():
-        # Clear output
-        return [], thread_id, "Please enter a query!", []
+    if not query or not query.strip():
+        gr.Warning("Research brief cannot be empty! Please provide a topic or question to start.")
+        return [], thread_id, "###Attention\nPlease enter a research brief in the text box above before planning.", []
+
 
     # Force a completely new execution thread whenever a new plan is requested
     thread_id = ""

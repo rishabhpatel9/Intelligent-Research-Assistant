@@ -132,29 +132,10 @@ custom_css = """
 .header-bar { background-color: var(--block-label-background-fill) !important; border-bottom: none !important; margin: 0 !important; padding: 0.35rem 0.5rem !important; border-top-left-radius: 8px !important; border-top-right-radius: 8px !important; border-bottom-left-radius: 0px !important; border-bottom-right-radius: 0px !important; }
 .header-bar p { text-align: center !important; font-size: 1.1em !important; font-weight: 600 !important; margin: 0 !important; color: var(--body-text-color) !important; }
 .log-sidebar { border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; font-family: monospace; }
-.log-sidebar textarea { border: none !important; box-shadow: none !important; background: var(--bg-color) !important; overflow-y: auto !important; }
 """
 
-custom_js = """
-() => {
-    const scrollLog = () => {
-        const el = document.querySelector('.log-sidebar textarea');
-        if (el) {
-            el.scrollTop = el.scrollHeight;
-        }
-    };
-    // Observe the log container for changes
-    const logContainer = document.querySelector('.log-sidebar');
-    if (logContainer) {
-        const observer = new MutationObserver(scrollLog);
-        observer.observe(logContainer, { childList: true, subtree: true, characterData: true });
-    }
-    // Periodic fallback scroll
-    setInterval(scrollLog, 1000);
-}
-"""
 
-with gr.Blocks(title="Autonomous Research Studio", js=custom_js) as iface:
+with gr.Blocks(title="Autonomous Research Studio") as iface:
     session_thread = gr.State("")
     with gr.Column(elem_classes="research-container"):
         gr.Markdown("""

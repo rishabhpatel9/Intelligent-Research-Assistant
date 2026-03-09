@@ -34,26 +34,36 @@ def parse_json_robustly(raw_text: str):
     elif start_brace != -1:
         start = start_brace
         
-    if start != -1:
-        end_bracket = text.rfind(']')
-        end_brace = text.rfind('}')
-        end = max(end_bracket, end_brace)
-        if end != -1:
-            text = text[start:end+1]
+    if start == -1:
+        # If no brackets are found, it's probably not structured JSON content
+        return None
+
+    end_bracket = text.rfind(']')
+    end_brace = text.rfind('}')
+    end = max(end_bracket, end_brace)
+    
+    if end == -1 or end < start:
+        return None
+        
+    text = text[start:end+1]
 
     # 3. Handle common LLM escaping hallucinations (e.g. \" used as delimiters)
-    # But be careful not to break valid escaped characters inside strings
-    # A common one is \"key\": \"value\"
-    # We only replace \" if it precedes a key or a value delimiter pattern
     text = text.replace('\\"', '"')
 
     # 4. Use json_repair for final cleanup (handles trailing commas, missing quotes, etc.)
     try:
         repaired = repair_json(text)
-        return json.loads(repaired)
+        data = json.loads(repaired)
+        # We only want lists or dicts, not string literals
+        if not isinstance(data, (list, dict)):
+            return None
+        return data
     except Exception as e:
         # Fallback to standard json.loads if repair failed or produced invalid json
         try:
-            return json.loads(text)
+            data = json.loads(text)
+            if not isinstance(data, (list, dict)):
+                return None
+            return data
         except Exception:
             raise e

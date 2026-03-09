@@ -36,17 +36,39 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
         response = query_llm(messages)
         plan = parse_json_robustly(response)
         
-        if not isinstance(plan, list):
-            # Try to see if it's an object with a 'tasks' key or similar
-            if isinstance(plan, dict):
-                for key in ["tasks", "plan", "subtasks"]:
-                    if key in plan and isinstance(plan[key], list):
-                        plan = plan[key]
-                        break
-            if not isinstance(plan, list):
-                plan = []
+        # If the LLM returned a dictionary instead of a list, try to find the list inside it
+        if isinstance(plan, dict):
+            for key in ["tasks", "plan", "subtasks", "research_tasks"]:
+                if key in plan and isinstance(plan[key], list):
+                    plan = plan[key]
+                    break
+        
+        # Validate that plan is a list of tasks
+        if not isinstance(plan, list) or not plan:
+            print(f"Orchestrator returned empty or invalid plan format: {plan}")
+            plan = []
+            
+        # Ensure each item in the plan is a dictionary with at least 'description'
+        if plan:
+            validated_plan = []
+            for i, task in enumerate(plan):
+                if isinstance(task, dict) and task.get("description"):
+                    # Fill in missing fields if necessary
+                    if not task.get("id"):
+                        task["id"] = f"task_{i+1}"
+                    if not task.get("source"):
+                        task["source"] = "auto"
+                    validated_plan.append(task)
+            plan = validated_plan
+
     except Exception as e:
         print(f"Failed to parse orchestrator JSON. Error: {e}\nRaw Response: {response}")
+        plan = []
+
+    # Final fallback: if no valid tasks were generated, use the original query as a single task
+    status_msg = f"Orchestrator: Generated a {len(plan)}-task research plan."
+    if not plan:
         plan = [{"id": "task_1", "description": query, "source": "auto"}]
+        status_msg = "Orchestrator: LLM failed to generate a structured plan. Falling back to simple research mode."
         
-    return {"plan": plan, "logs": [f"Orchestrator: Generated a {len(plan)}-task research plan."]}
+    return {"plan": plan, "logs": [status_msg]}

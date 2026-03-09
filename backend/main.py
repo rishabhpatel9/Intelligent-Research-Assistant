@@ -22,35 +22,72 @@ def run_query(request: QueryRequest):
     # We pass the initial state (we need to ensure lists are empty if not provided)
     initial_state = {
         "query": request.query,
-        "completed_tasks": [],
+        "category": "",
+        "plan": [],
         "research_findings": [],
+        "completed_tasks": [],
         "messages": [],
-        "plan": []
+        "logs": []
     }
     
     workflow.invoke(initial_state, config=config)
     state = workflow.get_state(config)
     
     if state.next:
-        # Paused at 'scout' for HITL
-        plan = state.values.get("plan", [])
-        return {"status": "requires_approval", "thread_id": thread_id, "plan": plan}
+        # Paused at 'review_plan' for HITL
+        vals = state.values or {}
+        plan = vals.get("plan") or []
+        initial_logs = vals.get("logs") or []
+        return {"status": "requires_approval", "thread_id": thread_id, "plan": plan, "logs": initial_logs}
         
     return {"status": "completed", "result": state.values.get("result", "No result generated.")}
 
+from fastapi.responses import StreamingResponse
+import json
+
 @app.post("/approve")
-def approve_plan(request: ApproveRequest):
+async def approve_plan(request: ApproveRequest):
     config = {"configurable": {"thread_id": request.thread_id}}
     
-    # If the user edited the plan on the frontend, update the graph state before resuming
     if request.plan is not None:
         workflow.update_state(config, {"plan": request.plan})
         
-    # Resume by passing None to the graph
-    workflow.invoke(None, config=config)
-    
-    state = workflow.get_state(config)
-    if not state.next:
-        return {"status": "completed", "result": state.values.get("result", "")}
-        
-    return {"status": "error", "message": f"Graph paused unexpectedly at step: {state.next}. Ensure you don't have interrupt_before set on autonomous loop nodes."}
+    def event_generator():
+        try:
+            # Stream the events from the compiled LangGraph workflow
+            # Using stream_mode="values" or "updates"
+            for chunk in workflow.stream(None, config=config, stream_mode="updates"):
+                if chunk:
+                    node_name = list(chunk.keys())[0]
+                    node_data = chunk[node_name]
+                    
+                    # 1. Yield the generic "starting" message
+                    msg = f"Agent '{node_name.capitalize()}' is processing..."
+                    if node_name == "scout":
+                        msg = "[Scout] Searching for background info..."
+                    elif node_name == "reader":
+                        msg = "[Reader] Deep-scraping selected sources..."
+                    elif node_name == "critic":
+                        msg = "[Critic] Verifying if data fulfills the plan..."
+                    elif node_name == "synthesizer":
+                        msg = "[Synthesizer] Drafting the final report..."
+                    
+                    yield f"data: {json.dumps({'status': 'thinking', 'message': msg})}\n\n"
+                    
+                    # 2. Yield any detailed logs returned by the node itself
+                    if isinstance(node_data, dict) and "logs" in node_data:
+                        logs = node_data.get("logs") or []
+                        for log_entry in logs:
+                            yield f"data: {json.dumps({'status': 'thinking', 'message': f'  -> {log_entry}'})}\n\n"
+                    
+            state = workflow.get_state(config)
+            vals = state.values or {}
+            if not state.next:
+                final_result = vals.get("result", "")
+                yield f"data: {json.dumps({'status': 'completed', 'result': final_result})}\n\n"
+            else:
+                yield f"data: {json.dumps({'status': 'error', 'message': f'Paused at {state.next}'})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

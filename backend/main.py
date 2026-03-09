@@ -67,7 +67,7 @@ async def approve_plan(request: ApproveRequest):
                     if node_name == "scout":
                         msg = "Searching for background info..."
                     elif node_name == "reader":
-                        msg = "Deep-scraping selected sources..."
+                        msg = "Deep scraping selected sources..."
                     elif node_name == "critic":
                         msg = "Verifying if data fulfills the plan..."
                     elif node_name == "synthesizer":

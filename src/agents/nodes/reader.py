@@ -71,7 +71,7 @@ def reader_node(state: AgentState) -> dict:
             urls = extract_urls(f.get("data", ""))
             scraped_urls.extend(urls[:2])
             
-    node_logs = [f"Reader: Deep-scraped {url}" for url in scraped_urls]
+    node_logs = [f"Reader: Deep scraped {url}" for url in scraped_urls]
     
     # Return it to comply with LangGraph structure
     return {"research_findings": updated_findings, "logs": node_logs}

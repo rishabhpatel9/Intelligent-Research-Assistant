@@ -112,7 +112,7 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                         step_title = messages[-1]["metadata"].get("title", "Agent processing...")
                                         messages.append({
                                             "role": "assistant",
-                                            "content": f"↳ {log_entry}",
+                                            "content": f"{log_entry}",
                                             "metadata": {"title": step_title, "status": "pending"}
                                         })
                                         yield "_Synthesis in progress... Listening to agents..._", messages, ""

@@ -27,6 +27,7 @@ You must:
 2. Use headers, bullet points, and tables where appropriate to make data readable.
 3. Cite your sources inline using the [Source: X] metadata provided.
 4. If the context does not fully answer the brief, state what remains unknown.
+5. Provide a "References" section at the VERY END of the report. This section must list all the unique sources used in your report. Format each reference as a Markdown list item. If a source is a URL, it MUST be formatted as a clickable Markdown link (e.g., [Title or URL](URL)).
 
 Context:
 {context}

@@ -10,3 +10,4 @@ class AgentState(TypedDict):
     completed_tasks: Annotated[List[str], operator.add] # Finished tasks
     result: str # Final synthesized output
     messages: Annotated[List[Dict[str, Any]], operator.add] # Message history
+    logs: Annotated[List[str], operator.add] # Detailed agent action logs

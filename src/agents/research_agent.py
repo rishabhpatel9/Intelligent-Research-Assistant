@@ -43,8 +43,8 @@ def route_critic(state: AgentState) -> str:
     If all tasks in the 'plan' are in 'completed_tasks', then everything 
     has passed the Critic's checks and we can synthesize. Otherwise, loop back.
     """
-    plan = state.get("plan", [])
-    completed_tasks = state.get("completed_tasks", [])
+    plan = state.get("plan") or []
+    completed_tasks = state.get("completed_tasks") or []
     
     # Check if we have a plan and all tasks have been completed and passed (id is in completed_tasks)
     if len(plan) > 0 and len(completed_tasks) == len(plan):

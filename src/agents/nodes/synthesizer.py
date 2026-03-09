@@ -4,7 +4,7 @@ from src.agents.state import AgentState
 def synthesizer_node(state: AgentState) -> dict:
     # Compiles the final beautiful dossier.
     query = state.get("query")
-    findings = state.get("research_findings", [])
+    findings = state.get("research_findings") or []
     
     # We only want to synthesize findings that passed the critic
     passed_findings = [f for f in findings if f.get("pass", True)]
@@ -42,4 +42,4 @@ Context:
     except Exception as e:
         final_report = f"[Synthesis Error] {e}"
         
-    return {"result": final_report}
+    return {"result": final_report, "logs": ["Synthesizer: Drafted research report using verified findings."]}

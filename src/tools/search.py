@@ -3,7 +3,7 @@ import sqlite3
 import hashlib
 import json
 import requests
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 import wikipedia
 import arxiv
 

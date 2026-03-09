@@ -109,8 +109,9 @@ Respond ONLY with a valid JSON object:
             
     node_logs = []
     for f in findings:
-        if f.get("evaluated") and "pass" in f:
+        if f.get("evaluated") and "pass" in f and not f.get("critic_logged"):
             status = "PASSED" if f["pass"] else "FAILED"
-            node_logs.append(f"Critic: Task {f['task_id']} {status}. Reason: {f.get('reason', 'N/A')}")
+            node_logs.append(f"Critic: Task {f.get('task_id', 'unknown')} {status}. Reason: {f.get('reason', 'N/A')}")
+            f["critic_logged"] = True
 
     return {"plan": new_plan, "logs": node_logs}

@@ -116,7 +116,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                 submit_btn = gr.Button("Plan Research", variant="primary", scale=2, elem_classes="btn-green")
                 clear_btn = gr.Button("Clear", variant="secondary", scale=1, elem_classes="btn-red")
                 
-        gr.Markdown("<p class='subtitle-text' style='text-align: center; margin-bottom: 0px; padding-top: 0.5rem;'><em>Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute.</em></p>")
+        gr.Markdown("<p class='subtitle-text' style='text-align: center; margin-bottom: 0px; padding-top: 0.5rem;'><em>Review and edit the Orchestrator's plan. You can modify search queries or sources before hitting Execute. Kindly wait a few seconds after requesting a research plan for the first time while we wake up the LLM from its nap.</em></p>")
         with gr.Group() as approval_group:
             gr.Markdown("Research Plan", elem_classes="header-bar")
             plan_editor = gr.Dataframe(

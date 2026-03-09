@@ -45,8 +45,10 @@ def reader_node(state: AgentState) -> dict:
             continue
             
         raw_data = finding.get("data", "")
-        # ArXiv and Wikipedia usually provide enough exact context. Deep scrape mainly targeted at web searches.
-        if finding.get("source") in ["duckduckgo", "tavily", "auto"]:
+        # Deep scraping is mainly targeted at general web search results.
+        # For structured sources like Wikipedia/ArXiv we keep the original data.
+        source = finding.get("source")
+        if source in ["duckduckgo", "tavily", "auto"]:
             urls = extract_urls(raw_data)
             
             scraped_content = []
@@ -59,8 +61,10 @@ def reader_node(state: AgentState) -> dict:
             # Append scraped data to the finding
             finding["scraped_data"] = "\n\n".join(scraped_content)
         else:
-            # Not a standard web result, no deep scrape needed
-            finding["scraped_data"] = "Not applicable for this source."
+            # Not a standard web result, no deep scrape needed; preserve the
+            # original content so downstream nodes (e.g. Critic) see real data
+            # instead of a placeholder string.
+            finding["scraped_data"] = finding.get("data", "")
             
         updated_findings.append(finding)
         

@@ -60,7 +60,8 @@ def approve_plan(thread_id: str, plan_df, current_messages):
 
     # Use existing messages from Orchestrator
     messages = list(current_messages) if current_messages else []
-    
+    current_step_title = None
+ 
     yield "_Research in progress... Results will appear here shortly._", messages, ""
 
     try:
@@ -92,30 +93,24 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                         if m.get("role") == "assistant" and m.get("metadata", {}).get("status") == "pending":
                                             m["metadata"]["status"] = "done"
 
-                                    step_title = data.get("message", "Agent processing...")
-
-                                    # Avoid creating duplicate consecutive steps with the same title
-                                    if not messages or messages[-1].get("metadata", {}).get("title") != step_title:
-                                        messages.append({
-                                            "role": "assistant",
-                                            "content": "",
-                                            "metadata": {"title": step_title, "status": "pending"}
-                                        })
+                                    # Remember the current step title; individual logs will
+                                    # carry this in their metadata so we don't need an
+                                    # empty placeholder message.
+                                    current_step_title = data.get("message", "Agent processing...")
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
-                                    # Append each log entry as a new message so that
-                                    # Gradio's autoscroll (which triggers on new messages)
-                                    # keeps the Thinking Log pinned to the latest update.
-                                    if messages and messages[-1]["role"] == "assistant":
-                                        log_entry = data.get("log", "")
-                                        step_title = messages[-1]["metadata"].get("title", "Agent processing...")
-                                        messages.append({
-                                            "role": "assistant",
-                                            "content": f"{log_entry}",
-                                            "metadata": {"title": step_title, "status": "pending"}
-                                        })
-                                        yield "_Synthesis in progress... Listening to agents..._", messages, ""
+                                    # Append each log entry as its own message with the
+                                    # appropriate step title so the Thinking Log remains
+                                    # readable and avoids an initial empty entry.
+                                    log_entry = data.get("log", "")
+                                    step_title = current_step_title or "Agent processing..."
+                                    messages.append({
+                                        "role": "assistant",
+                                        "content": f"{log_entry}",
+                                        "metadata": {"title": step_title, "status": "pending"}
+                                    })
+                                    yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
                                 elif data.get("status") == "completed":
                                     # Mark all assistant messages as done once the run completes

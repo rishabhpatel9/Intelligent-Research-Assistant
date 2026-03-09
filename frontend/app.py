@@ -110,13 +110,15 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                     # keeps the Thinking Log pinned to the latest update.
                                     if messages and messages[-1]["role"] == "assistant":
                                         log_entry = data.get("log", "")
-                                        step_title = messages[-1]["metadata"].get("title", "Agent processing...")
+                                        # Use an empty title for log lines so we don't
+                                        # duplicate the step header (e.g. "Drafting the final report")
+                                        # in the Visibly Thinking UI.
                                         messages.append({
                                             "role": "assistant",
                                             "content": f"↳ {log_entry}",
                                             # Log entries themselves are instantaneous; mark them done
                                             # so they don't show a persistent processing spinner.
-                                            "metadata": {"title": step_title, "status": "done"}
+                                            "metadata": {"title": "", "status": "done"}
                                         })
                                         yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
@@ -240,7 +242,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         with gr.Group(elem_id="output-section"):
             gr.Markdown("Output", elem_classes="header-bar")
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
-            scroll_helper = gr.HTML(visible=False)
+            scroll_helper = gr.HTML(visible=False, sanitize=False)
     # Event listeners
     submit_btn.click(
         fn=run_query,

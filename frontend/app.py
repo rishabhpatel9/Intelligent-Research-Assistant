@@ -140,7 +140,14 @@ def replan(query: str):
     # Pass an empty thread to force a new execution graph
     return run_query(query, "")
 
-def clear_ui():
+def clear_ui(current_thread_id: str):
+    # Signal the backend to cancel any in-flight run for this thread.
+    if current_thread_id:
+        try:
+            requests.post(f"{API_URL}/cancel", json={"thread_id": current_thread_id}, timeout=3)
+        except Exception:
+            # Best-effort cancel; UI should still clear even if this fails.
+            pass
     return "", "_Results will appear here..._", "", [], []
 
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
@@ -247,7 +254,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     )
     clear_btn.click(
         fn=clear_ui,
-        inputs=None,
+        inputs=[session_thread],
         outputs=[query_input, output_display, session_thread, plan_editor, log_output]
     )
 

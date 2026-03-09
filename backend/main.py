@@ -1,10 +1,11 @@
 import uuid
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Set
 from src.agents.research_agent import workflow
 
 app = FastAPI()
+cancelled_threads: Set[str] = set()
 
 class QueryRequest(BaseModel):
     query: str
@@ -13,6 +14,9 @@ class QueryRequest(BaseModel):
 class ApproveRequest(BaseModel):
     thread_id: str
     plan: Optional[list] = None
+
+class CancelRequest(BaseModel):
+    thread_id: str
 
 @app.post("/query")
 def run_query(request: QueryRequest):
@@ -57,6 +61,11 @@ async def approve_plan(request: ApproveRequest):
             # Stream the events from the compiled LangGraph workflow
             # Using stream_mode="values" or "updates"
             for chunk in workflow.stream(None, config=config, stream_mode="updates"):
+                # Check for external cancellation request
+                if request.thread_id in cancelled_threads:
+                    cancelled_threads.discard(request.thread_id)
+                    yield f"data: {json.dumps({'status': 'cancelled', 'thread_id': request.thread_id})}\n\n"
+                    break
                 if chunk:
                     node_name = list(chunk.keys())[0]
                     node_data = chunk[node_name]
@@ -92,3 +101,9 @@ async def approve_plan(request: ApproveRequest):
             yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.post("/cancel")
+def cancel_run(request: CancelRequest):
+    """Mark a thread as cancelled so any active stream can stop early."""
+    cancelled_threads.add(request.thread_id)
+    return {"status": "cancelled", "thread_id": request.thread_id}

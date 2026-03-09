@@ -51,9 +51,8 @@ import json
 
 def approve_plan(thread_id: str, plan_df, current_messages):
     """Approve the plan and stream log messages from the backend.
-    Yields (final_result, messages, scroll_html) for Gradio to update components.
-    The scroll_html field is used to trigger a smooth scroll to the output
-    section only once the final result is ready.
+    Yields (final_result, messages, helper_html) for Gradio to update components.
+    The helper_html field is used for small client-side helpers (e.g. scrolling).
     """
     if not thread_id:
         yield "", current_messages, ""
@@ -105,24 +104,18 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
-                                    # Append log lines to the current thinking step's content so that
-                                    # they remain visually nested under the step's collapsible header.
+                                    # Append each log entry as a new message so that
+                                    # Gradio's autoscroll (which triggers on new messages)
+                                    # keeps the Thinking Log pinned to the latest update.
                                     if messages and messages[-1]["role"] == "assistant":
                                         log_entry = data.get("log", "")
-                                        current_content = messages[-1].get("content", "")
-                                        messages[-1]["content"] = (current_content + "\n" + f"↳ {log_entry}").strip()
-
-                                        # Inject script to keep the Thinking Log scrolled to the newest content.
-                                        scroll_script = """
-                                        <script>
-                                        const cols = document.getElementsByClassName("log-sidebar");
-                                        if (cols.length) {
-                                          const el = cols[0];
-                                          el.scrollTop = el.scrollHeight;
-                                        }
-                                        </script>
-                                        """
-                                        yield "_Synthesis in progress... Listening to agents..._", messages, scroll_script
+                                        step_title = messages[-1]["metadata"].get("title", "Agent processing...")
+                                        messages.append({
+                                            "role": "assistant",
+                                            "content": f"↳ {log_entry}",
+                                            "metadata": {"title": step_title, "status": "pending"}
+                                        })
+                                        yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
                                 elif data.get("status") == "completed":
                                     # Mark all assistant messages as done once the run completes
@@ -132,15 +125,8 @@ def approve_plan(thread_id: str, plan_df, current_messages):
                                             m["metadata"]["status"] = "done"
                                     
                                     final_res = data.get("result", "")
-                                    scroll_script = """
-                                    <script>
-                                    const el = document.getElementById("output-section");
-                                    if (el) {
-                                      el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    }
-                                    </script>
-                                    """
-                                    yield final_res, messages, scroll_script
+                                    # No special scrolling to the output section; just return the result.
+                                    yield final_res, messages, ""
                                     
                                 elif data.get("status") == "error":
                                     err_msg = data.get("message", "Unknown error")
@@ -241,7 +227,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                         elem_classes="log-sidebar"
                     )
 
-        with gr.Group(elem_id="output-section"):
+        with gr.Group():
             gr.Markdown("Output", elem_classes="header-bar")
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
             scroll_helper = gr.HTML(visible=False, sanitize=False)

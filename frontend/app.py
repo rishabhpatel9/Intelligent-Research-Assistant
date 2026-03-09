@@ -198,11 +198,19 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                     with gr.Row():
                         approve_btn = gr.Button("Approve & Execute Plan", variant="primary", elem_classes="btn-green")
                         replan_btn = gr.Button("Regenerate Plan", variant="secondary", elem_classes="btn-blue")
-            
             with gr.Column(scale=3):
                 with gr.Group():
                     gr.Markdown("Thinking Log", elem_classes="header-bar")
-                    log_output = gr.Chatbot(label="Thinking Process", show_label=False, autoscroll=True, elem_classes="log-sidebar")
+                    log_output = gr.Chatbot(
+                        label="Thinking Process", 
+                        show_label=False, 
+                        autoscroll=True, 
+                        height=450, 
+                        max_height=450,
+                        layout="panel",
+                        buttons=["copy_all"],
+                        elem_classes="log-sidebar"
+                    )
 
         with gr.Group():
             gr.Markdown("Output", elem_classes="header-bar")
@@ -211,17 +219,20 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     submit_btn.click(
         fn=run_query,
         inputs=[query_input, session_thread],
-        outputs=[plan_editor, session_thread, output_display, log_output]
+        outputs=[plan_editor, session_thread, output_display, log_output],
+        scroll_to_output=True
     )
     replan_btn.click(
         fn=replan,
         inputs=[query_input],
-        outputs=[plan_editor, session_thread, output_display, log_output]
+        outputs=[plan_editor, session_thread, output_display, log_output],
+        scroll_to_output=True
     )
     approve_btn.click(
         fn=approve_plan,
         inputs=[session_thread, plan_editor, log_output],
-        outputs=[output_display, log_output]
+        outputs=[output_display, log_output],
+        scroll_to_output=True
     )
     clear_btn.click(
         fn=clear_ui,

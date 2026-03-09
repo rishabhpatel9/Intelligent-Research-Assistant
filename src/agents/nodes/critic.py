@@ -2,7 +2,7 @@ from src.llm_client import query_llm
 from src.agents.state import AgentState
 from src.utils.json_utils import parse_json_robustly
 
-def critic_node(state: AgentState) -> dict:
+def critic_node(state: AgentState):
     # Evaluates if the collected findings are sufficient for a given task.
     plan = state.get("plan") or []
     findings = state.get("research_findings") or []
@@ -25,6 +25,9 @@ def critic_node(state: AgentState) -> dict:
         description = task.get("description")
         data = task_finding.get("scraped_data") or task_finding.get("data")
         
+        # Yield log before LLM call
+        yield {"logs": [f"Critic: Handing off to LLM to evaluate task '{task_id}'..."]}
+
         prompt = f"""
 You are the Critic in an Autonomous Research Studio.
 Your job is to objectively evaluate if the gathered data is sufficient to satisfy the research task.
@@ -58,7 +61,8 @@ Respond ONLY with a valid JSON object:
             task_finding["pass"] = eval_result.get("pass", True)
             task_finding["reason"] = eval_result.get("reason", "No reason provided.")
             
-            print(f"[Critic] Task {task_id} Eval: PASS={task_finding['pass']} | Reason: {task_finding['reason']}")
+            status = "PASSED" if task_finding["pass"] else "FAILED"
+            yield {"logs": [f"Critic: Task {task_id} {status}. Reason: {task_finding['reason']}"]}
             
             if not task_finding["pass"]:
                 # The Critic rejected it. We must loop back.
@@ -75,12 +79,7 @@ Respond ONLY with a valid JSON object:
             task_finding["evaluated"] = True
             task_finding["pass"] = True # Default to pass if LLM fails formatting to prevent infinite loop
             task_finding["reason"] = f"Evaluation failed error: {str(e)}"
+            yield {"logs": [f"Critic: Task {task_id} FAILED evaluation due to error."]}
 
-            
-    node_logs = []
-    for f in findings:
-        if f.get("evaluated") and "pass" in f:
-            status = "PASSED" if f["pass"] else "FAILED"
-            node_logs.append(f"Critic: Task {f['task_id']} {status}. Reason: {f.get('reason', 'N/A')}")
-
-    return {"plan": new_plan, "logs": node_logs}
+    # We yield the final state updates for the graph
+    yield {"plan": new_plan, "completed_tasks": completed_tasks, "research_findings": findings}

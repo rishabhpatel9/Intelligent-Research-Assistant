@@ -1,7 +1,7 @@
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 
-def synthesizer_node(state: AgentState) -> dict:
+def synthesizer_node(state: AgentState):
     # Compiles the final beautiful dossier.
     query = state.get("query")
     findings = state.get("research_findings") or []
@@ -9,6 +9,9 @@ def synthesizer_node(state: AgentState) -> dict:
     # We only want to synthesize findings that passed the critic
     passed_findings = [f for f in findings if f.get("pass", True)]
     
+    # Yield log before processing
+    yield {"logs": ["Synthesizer: Preparing verified research findings for report drafting..."]}
+
     context_blocks = []
     for idx, f in enumerate(passed_findings):
         src = f.get("source", "Unknown")
@@ -37,9 +40,15 @@ Context:
         {"role": "user", "content": prompt}
     ]
     
+    # Yield log before LLM call
+    yield {"logs": ["Synthesizer: Handing off to LLM to draft the final report..."]}
+
     try:
         final_report = query_llm(messages)
+        status_msg = "Synthesizer: Final report drafted successfully."
     except Exception as e:
         final_report = f"[Synthesis Error] {e}"
+        status_msg = f"Synthesizer: Error during report drafting: {str(e)}"
         
-    return {"result": final_report, "logs": ["Synthesizer: Drafted research report using verified findings."]}
+    yield {"result": final_report, "logs": [status_msg]}
+

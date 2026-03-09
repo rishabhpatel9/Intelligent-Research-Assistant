@@ -30,7 +30,7 @@ def fetch_and_extract(url: str) -> str:
     except Exception as e:
         return f"[Scrape Error: {str(e)}]"
 
-def reader_node(state: AgentState) -> dict:
+def reader_node(state: AgentState):
     """Iterates over Scout's findings and performs deep scraping on URLs."""
     findings = state.get("research_findings") or []
     
@@ -52,7 +52,7 @@ def reader_node(state: AgentState) -> dict:
             scraped_content = []
             # Scrape up to 2 URLs per finding to save time/context
             for url in urls[:2]:
-                print(f"[Reader] Deep Scraping: {url}")
+                yield {"logs": [f"Reader: Deep-scraping source: {url}..."]}
                 extracted = fetch_and_extract(url)
                 scraped_content.append(f"Source: {url}\n{extracted}\n")
             
@@ -64,14 +64,5 @@ def reader_node(state: AgentState) -> dict:
             
         updated_findings.append(finding)
         
-    scraped_urls = []
-    for f in updated_findings:
-        if "scraped_data" in f and f["scraped_data"] != "Not applicable for this source.":
-            # Extract URLs from the scraped content for logging
-            urls = extract_urls(f.get("data", ""))
-            scraped_urls.extend(urls[:2])
-            
-    node_logs = [f"Reader: Deep-scraped {url}" for url in scraped_urls]
-    
-    # Return it to comply with LangGraph structure
-    return {"research_findings": updated_findings, "logs": node_logs}
+    yield {"research_findings": updated_findings, "logs": ["Reader: Completed deep-scraping of all relevant sources."]}
+

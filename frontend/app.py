@@ -34,10 +34,11 @@ def run_query(query: str, thread_id: str):
                 messages = [
                     {
                         "role": "assistant", 
-                        "content": "\n".join(initial_logs) if initial_logs else "Orchestrator has analyzed the brief.",
+                        "content": "\n".join([f"↳ {log}" for log in initial_logs]) if initial_logs else "Orchestrator has analyzed the brief.",
                         "metadata": {"title": "Orchestrator: Planning", "status": "done"}
                     }
                 ]
+
                 
                 return df_data, new_thread_id, "_Review the generated plan below._", messages
             else:

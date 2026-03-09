@@ -2,10 +2,13 @@ from src.llm_client import query_llm
 from src.agents.state import AgentState
 from src.utils.json_utils import parse_json_robustly
 
-def orchestrator_node(state: AgentState) -> dict:
+def orchestrator_node(state: AgentState):
     """Decomposes the user's research brief into actionable sub-tasks."""
     query = state["query"]
     
+    # Yield an intermediate log to show LLM handoff in real-time
+    yield {"logs": ["Orchestrator: Handing off to LLM to decompose research brief..."]}
+
     import random
     salt = random.randint(1000, 9999)
     # Adding a random salt instruction variation forces exactly deterministic local LLMs to re-sample
@@ -45,7 +48,6 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
         
         # Validate that plan is a list of tasks
         if not isinstance(plan, list) or not plan:
-            print(f"Orchestrator returned empty or invalid plan format: {plan}")
             plan = []
             
         # Ensure each item in the plan is a dictionary with at least 'description'
@@ -62,7 +64,7 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
             plan = validated_plan
 
     except Exception as e:
-        print(f"Failed to parse orchestrator JSON. Error: {e}\nRaw Response: {response}")
+        print(f"Failed to parse orchestrator JSON. Error: {e}")
         plan = []
 
     # Final fallback: if no valid tasks were generated, use the original query as a single task
@@ -71,4 +73,4 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
         plan = [{"id": "task_1", "description": query, "source": "auto"}]
         status_msg = "Orchestrator: LLM failed to generate a structured plan. Falling back to simple research mode."
         
-    return {"plan": plan, "logs": [status_msg]}
+    yield {"plan": plan, "logs": [status_msg]}

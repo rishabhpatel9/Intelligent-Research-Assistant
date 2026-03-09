@@ -5,7 +5,7 @@ requests
 pydantic
 python-dotenv
 beautifulsoup4
-duckduckgo-search
+ddgs
 wikipedia
 arxiv
 fastapi

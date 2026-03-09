@@ -12,10 +12,9 @@ def get_empty_df():
 def run_query(query: str, thread_id: str):
     if not query.strip():
         # Clear output
-        return [], thread_id, "Please enter a query!", ""
+        return [], thread_id, "Please enter a query!", []
 
     # Force a completely new execution thread whenever a new plan is requested
-    # This prevents state corruption if the user clicks "Plan Research" mid-session.
     thread_id = ""
 
     try:
@@ -30,40 +29,46 @@ def run_query(query: str, thread_id: str):
                 # Format plan into dataframe rows
                 df_data = [[t.get("id", f"task_{i}"), t.get("source", "auto"), t.get("description", "")] for i, t in enumerate(plan)]
 
-                log_str = "Orchestration started...\n"
-                for entry in initial_logs:
-                    log_str += f"   ↳ {entry}\n"
+                # Convert logs to Visibly Thinking format
+                # We use a single assistant message with a title for Orchestration
+                messages = [
+                    {
+                        "role": "assistant", 
+                        "content": "\n".join(initial_logs) if initial_logs else "Orchestrator has analyzed the brief.",
+                        "metadata": {"title": "Orchestrator: Planning", "status": "done"}
+                    }
+                ]
                 
-                return df_data, new_thread_id, "_Review the generated plan below._", log_str
+                return df_data, new_thread_id, "_Review the generated plan below._", messages
             else:
-                return [], thread_id, data.get("result", "Completed without output."), ""
+                return [], thread_id, data.get("result", "Completed without output."), []
         else:
-            return [], thread_id, f"Error {response.status_code}: Could not process the query.", ""
+            return [], thread_id, f"Error {response.status_code}: Could not process the query.", []
     except Exception as e:
-        return [], thread_id, f"An error occurred: {str(e)}", ""
+        return [], thread_id, f"An error occurred: {str(e)}", []
 
 import json
 
-def approve_plan(thread_id: str, plan_df):
+def approve_plan(thread_id: str, plan_df, current_messages):
     """Approve the plan and stream log messages from the backend.
-    Yields a tuple (final_result, log_message) for Gradio to update both components.
+    Yields a tuple (final_result, messages) for Gradio to update both components.
     """
     if not thread_id:
-        yield "", "Error: No active session to approve."
+        yield "", current_messages
         return
 
-    log_content = "Starting Research Execution...\n"
-    yield "_Research in progress... Results will appear here shortly._", log_content
+    # Use existing messages from Orchestrator
+    messages = list(current_messages) if current_messages else []
+    
+    yield "_Research in progress... Results will appear here shortly._", messages
 
     try:
         new_plan = []
         for row in plan_df:
-            # Gradio Dataframe rows are lists. Ensure row is valid and has at least two elements (source is at index 1)
             if row and len(row) >= 3:
                 task_id = row[0]
                 source = str(row[1] if row[1] is not None else "auto").lower()
                 description = row[2]
-                
                 if task_id and description:
                     if source not in ["auto", "wikipedia", "arxiv"]:
                         source = "auto"
@@ -78,35 +83,55 @@ def approve_plan(thread_id: str, plan_df):
                         if decoded_line.startswith("data: "):
                             try:
                                 data = json.loads(decoded_line[6:])
-                                status = data.get("status")
+                                event = data.get("event")
                                 
-                                if status == "thinking":
-                                    msg = data.get("message", "")
-                                    log_content += f"{msg}\n"
-                                    yield "_Synthesis in progress... Listening to agents..._", log_content
-                                elif status == "completed":
+                                if event == "step_start":
+                                    # Mark previous step as done
+                                    if messages and messages[-1]["role"] == "assistant":
+                                        messages[-1]["metadata"]["status"] = "done"
+                                    
+                                    # Add new thinking step
+                                    messages.append({
+                                        "role": "assistant",
+                                        "content": "",
+                                        "metadata": {"title": data.get("message", "Agent processing..."), "status": "pending"}
+                                    })
+                                    yield "_Synthesis in progress... Listening to agents..._", messages
+                                
+                                elif event == "step_log":
+                                    # Append log to the current thinking step
+                                    if messages and messages[-1]["role"] == "assistant":
+                                        current_content = messages[-1]["content"]
+                                        log_entry = data.get("log", "")
+                                        messages[-1]["content"] = (current_content + "\n" + f"↳ {log_entry}").strip()
+                                        yield "_Synthesis in progress... Listening to agents..._", messages
+                                        
+                                elif data.get("status") == "completed":
+                                    if messages and messages[-1]["role"] == "assistant":
+                                        messages[-1]["metadata"]["status"] = "done"
+                                    
                                     final_res = data.get("result", "")
-                                    log_content += "\nSynthesis complete. Final report generated.\n"
-                                    yield final_res, log_content
-                                elif status == "error":
+                                    yield final_res, messages
+                                    
+                                elif data.get("status") == "error":
                                     err_msg = data.get("message", "Unknown error")
-                                    log_content += f"Error: {err_msg}\n"
-                                    yield f"An error occurred: {err_msg}", log_content
+                                    messages.append({"role": "assistant", "content": f"Error: {err_msg}", "metadata": {"title": "❌ System Error"}})
+                                    yield f"An error occurred: {err_msg}", messages
                             except json.JSONDecodeError:
                                 continue
             else:
-                log_content += f"Connection Error: Status {response.status_code}\n"
-                yield f"Error {response.status_code}: Could not connect to backend.", log_content
+                messages.append({"role": "assistant", "content": f"Connection Error: Status {response.status_code}", "metadata": {"title": "❌ Connection Error"}})
+                yield f"Error {response.status_code}: Could not connect to backend.", messages
     except Exception as e:
-        log_content += f"Exception: {str(e)}\n"
-        yield f"An error occurred: {str(e)}", log_content
+        messages.append({"role": "assistant", "content": str(e), "metadata": {"title": "❌ Exception"}})
+        yield f"An error occurred: {str(e)}", messages
 
 def replan(query: str):
     # Pass an empty thread to force a new execution graph
     return run_query(query, "")
 
 def clear_ui():
-    return "", "_Results will appear here..._", "", [], ""
+    return "", "_Results will appear here..._", "", [], []
 
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 
@@ -131,7 +156,10 @@ custom_css = """
 .subtitle-text { margin-bottom: 1rem !important; }
 .header-bar { background-color: var(--block-label-background-fill) !important; border-bottom: none !important; margin: 0 !important; padding: 0.35rem 0.5rem !important; border-top-left-radius: 8px !important; border-top-right-radius: 8px !important; border-bottom-left-radius: 0px !important; border-bottom-right-radius: 0px !important; }
 .header-bar p { text-align: center !important; font-size: 1.1em !important; font-weight: 600 !important; margin: 0 !important; color: var(--body-text-color) !important; }
-.log-sidebar { border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; font-family: monospace; }
+.log-sidebar { border: none !important; box-shadow: none !important; margin: 0 !important; background: transparent !important; }
+.log-sidebar .message-wrap { background: transparent !important; }
+.log-sidebar .message-row { padding: 0 !important; }
+.log-sidebar .avatar-container { display: none !important; }
 """
 
 
@@ -174,7 +202,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
             with gr.Column(scale=3):
                 with gr.Group():
                     gr.Markdown("Thinking Log", elem_classes="header-bar")
-                    log_output = gr.Textbox(value="", lines=12, max_lines=15, autoscroll=True, show_label=False, interactive=False, elem_classes="log-sidebar")
+                    log_output = gr.Chatbot(label="Thinking Process", show_label=False, autoscroll=True, elem_classes="log-sidebar")
 
         with gr.Group():
             gr.Markdown("Output", elem_classes="header-bar")
@@ -192,7 +220,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     )
     approve_btn.click(
         fn=approve_plan,
-        inputs=[session_thread, plan_editor],
+        inputs=[session_thread, plan_editor, log_output],
         outputs=[output_display, log_output]
     )
     clear_btn.click(

@@ -61,24 +61,25 @@ async def approve_plan(request: ApproveRequest):
                     node_name = list(chunk.keys())[0]
                     node_data = chunk[node_name]
                     
-                    # 1. Yield the generic "starting" message
+                    # 1. Yield the generic "starting" message as a step_start event
+                    event_type = "step_start"
                     msg = f"Agent '{node_name.capitalize()}' is processing..."
                     if node_name == "scout":
-                        msg = "[Scout] Searching for background info..."
+                        msg = "Searching for background info..."
                     elif node_name == "reader":
-                        msg = "[Reader] Deep-scraping selected sources..."
+                        msg = "Deep-scraping selected sources..."
                     elif node_name == "critic":
-                        msg = "[Critic] Verifying if data fulfills the plan..."
+                        msg = "Verifying if data fulfills the plan..."
                     elif node_name == "synthesizer":
-                        msg = "[Synthesizer] Drafting the final report..."
+                        msg = "Drafting the final report..."
                     
-                    yield f"data: {json.dumps({'status': 'thinking', 'message': msg})}\n\n"
+                    yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
                     
                     # 2. Yield any detailed logs returned by the node itself
                     if isinstance(node_data, dict) and "logs" in node_data:
                         logs = node_data.get("logs") or []
                         for log_entry in logs:
-                            yield f"data: {json.dumps({'status': 'thinking', 'message': f'  -> {log_entry}'})}\n\n"
+                            yield f"data: {json.dumps({'event': 'step_log', 'node': node_name, 'log': log_entry})}\n\n"
                     
             state = workflow.get_state(config)
             vals = state.values or {}

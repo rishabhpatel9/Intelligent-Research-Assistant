@@ -1,6 +1,22 @@
 import gradio as gr
 import requests
 import os
+import random
+
+def generate_challenge():
+    a = random.randint(2, 9)
+    b = random.randint(2, 9)
+    return f"**Solve this to access the studio:** {a} + {b} = ?", a + b
+
+def verify_human(answer, target):
+    try:
+        if answer and int(answer) == int(target):
+            return gr.update(visible=False), gr.update(visible=True), True, gr.update(visible=False), target, "", gr.update()
+    except Exception:
+        pass
+    new_q, new_a = generate_challenge()
+    return gr.update(), gr.update(), False, gr.update(visible=True, value="<p style='color: #ef4444; font-weight: 600;'>Verification failed. Please try again.</p>"), new_a, "", new_q
+
 
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 if API_URL.endswith("/query"):
@@ -169,7 +185,7 @@ custom_css = """
 .btn-green:hover { background-image: none !important; background-color: #10b981 !important; border-color: #10b981 !important; color: white !important; }
 .btn-red:hover { background-image: none !important; background-color: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
 .btn-blue:hover { background-image: none !important; background-color: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; }
-.title-header { margin-bottom: 0.5rem !important; padding-top: 1rem !important; }
+.title-header { margin-bottom: 0.5rem !important; padding-top: 1rem !important; text-align: center !important; }
 .subtitle-text { margin-bottom: 1rem !important; }
 .header-bar { background-color: var(--block-label-background-fill) !important; border-bottom: none !important; margin: 0 !important; padding: 0.35rem 0.5rem !important; border-top-left-radius: 8px !important; border-top-right-radius: 8px !important; border-bottom-left-radius: 0px !important; border-bottom-right-radius: 0px !important; }
 .header-bar p { text-align: center !important; font-size: 1.1em !important; font-weight: 600 !important; margin: 0 !important; color: var(--body-text-color) !important; }
@@ -177,12 +193,25 @@ custom_css = """
 .log-sidebar .message-wrap { background: transparent !important; }
 .log-sidebar .message-row { padding: 0 !important; }
 .log-sidebar .avatar-container { display: none !important; }
+.verification-card { max-width: 500px !important; margin: 100px auto !important; padding: 2rem !important; background: var(--block-background-fill) !important; border-radius: 12px !important; border: 1px solid var(--border-color-primary) !important; box-shadow: var(--shadow-drop-lg) !important; }
+.challenge-box { font-size: 1.2rem !important; font-weight: 600 !important; margin: 1rem 0 !important; border: 1px dashed var(--border-color-primary) !important; padding: 1rem !important; border-radius: 8px !important; background: var(--background-fill-secondary) !important; text-align: center !important; }
 """
 
 
 with gr.Blocks(title="Autonomous Research Studio") as iface:
     session_thread = gr.State("")
-    with gr.Column(elem_classes="research-container"):
+    is_verified = gr.State(False)
+    target_answer = gr.State(0)
+
+    with gr.Column(visible=True, elem_classes="verification-card") as gate_ui:
+        gr.Markdown("## Beep boop, are you a bot?", elem_classes="title-header")
+        gr.Markdown("Please solve this simple challenge to access the Autonomous Research Studio to help prevent spam and server overload.")
+        challenge_display = gr.Markdown("", elem_classes="challenge-box")
+        user_answer = gr.Textbox(placeholder="Enter the result here...", show_label=False, container=False)
+        verify_btn = gr.Button("Verify & Enter Studio", variant="primary", elem_classes="btn-green")
+        error_msg = gr.Markdown(visible=False)
+
+    with gr.Column(visible=False, elem_classes="research-container") as main_ui:
         gr.Markdown("""
         <h1 style="text-align: center;">Autonomous Research Studio</h1>
         Welcome to the multi-agent research swarm. Submit a brief, review the Orchestrator's plan, and let the agents deep scrape and synthesize a final report.
@@ -257,6 +286,19 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         inputs=[session_thread],
         outputs=[query_input, output_display, session_thread, plan_editor, log_output]
     )
+
+    # Verification Gate Listeners
+    verify_btn.click(
+        fn=verify_human,
+        inputs=[user_answer, target_answer],
+        outputs=[gate_ui, main_ui, is_verified, error_msg, target_answer, user_answer, challenge_display]
+    )
+    user_answer.submit(
+        fn=verify_human,
+        inputs=[user_answer, target_answer],
+        outputs=[gate_ui, main_ui, is_verified, error_msg, target_answer, user_answer, challenge_display]
+    )
+    iface.load(fn=generate_challenge, outputs=[challenge_display, target_answer])
 
 if __name__ == "__main__":
     iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)

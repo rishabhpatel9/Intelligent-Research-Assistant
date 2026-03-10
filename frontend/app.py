@@ -28,7 +28,7 @@ def get_empty_df():
 def run_query(query: str, thread_id: str):
     if not query.strip():
         # Clear output
-        return [], thread_id, "Please enter a query!", []
+        return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, "Please enter a query!", []]
 
     # Force a completely new execution thread whenever a new plan is requested
     thread_id = ""
@@ -42,11 +42,20 @@ def run_query(query: str, thread_id: str):
                 plan = data.get("plan", [])
                 initial_logs = data.get("logs", [])
                 
-                # Format plan into dataframe rows
-                df_data = [[t.get("id", f"task_{i}"), t.get("source", "auto"), t.get("description", "")] for i, t in enumerate(plan)]
+                # Format plan into task updates
+                updates = []
+                for i in range(8):
+                    if i < len(plan):
+                        task = plan[i]
+                        updates.extend([
+                            gr.update(visible=True), # row
+                            gr.update(value=task.get("id", f"task_{i+1}"), visible=True), # id
+                            gr.update(value=task.get("source", "auto"), visible=True), # source
+                            gr.update(value=task.get("description", ""), visible=True) # description
+                        ])
+                    else:
+                        updates.extend([gr.update(visible=False)] * 4)
 
-                # Convert logs to Visibly Thinking format
-                # We use a single assistant message with a title for Orchestration
                 messages = [
                     {
                         "role": "assistant", 
@@ -55,21 +64,18 @@ def run_query(query: str, thread_id: str):
                     }
                 ]
                 
-                return df_data, new_thread_id, "_Review the generated plan below._", messages
+                return updates + [new_thread_id, "_Review the generated plan below._", messages]
             else:
-                return [], thread_id, data.get("result", "Completed without output."), []
+                return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, data.get("result", "Completed without output."), []]
         else:
-            return [], thread_id, f"Error {response.status_code}: Could not process the query.", []
+            return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, f"Error {response.status_code}: Could not process the query.", []]
     except Exception as e:
-        return [], thread_id, f"An error occurred: {str(e)}", []
+        return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, f"An error occurred: {str(e)}", []]
 
 import json
 
-def approve_plan(thread_id: str, plan_df, current_messages):
-    """Approve the plan and stream log messages from the backend.
-    Yields (final_result, messages, helper_html) for Gradio to update components.
-    The helper_html field is used for small client-side helpers (e.g. scrolling).
-    """
+def approve_plan(thread_id: str, current_messages, *task_inputs):
+    """Approve the plan and stream log messages from the backend."""
     if not thread_id:
         yield "", current_messages, ""
         return
@@ -82,15 +88,16 @@ def approve_plan(thread_id: str, plan_df, current_messages):
 
     try:
         new_plan = []
-        for row in plan_df:
-            if row and len(row) >= 3:
-                task_id = row[0]
-                source = str(row[1] if row[1] is not None else "auto").lower()
-                description = row[2]
-                if task_id and description:
-                    if source not in ["auto", "wikipedia", "arxiv"]:
-                        source = "auto"
-                    new_plan.append({"id": task_id, "source": source, "description": description})
+        # task_inputs is a flat list of (id, source, description) * 8
+        for i in range(0, 24, 3):
+            task_id = task_inputs[i]
+            source = str(task_inputs[i+1] if task_inputs[i+1] is not None else "auto").lower()
+            description = task_inputs[i+2]
+            
+            if task_id and description:
+                if source not in ["auto", "duckduckgo", "wikipedia", "arxiv"]:
+                    source = "auto"
+                new_plan.append({"id": task_id, "source": source, "description": description})
 
         # Use requests with stream=True to consume the backend's EventStream
         with requests.post(f"{API_URL}/approve", json={"thread_id": thread_id, "plan": new_plan}, stream=True) as response:
@@ -164,7 +171,7 @@ def clear_ui(current_thread_id: str):
         except Exception:
             # Best-effort cancel; UI should still clear even if this fails.
             pass
-    return "", "_Results will appear here..._", "", [["", "auto", ""]], []
+    return ["", "_Results will appear here..._", ""] + [gr.update(visible=False) for _ in range(8*4)] + [[]]
 
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 
@@ -195,6 +202,8 @@ custom_css = """
 .log-sidebar .avatar-container { display: none !important; }
 .verification-card { max-width: 500px !important; margin: 100px auto !important; padding: 2rem !important; background: var(--block-background-fill) !important; border-radius: 12px !important; border: 1px solid var(--border-color-primary) !important; box-shadow: var(--shadow-drop-lg) !important; }
 .challenge-box { font-size: 1.2rem !important; font-weight: 600 !important; margin: 1rem 0 !important; border: 1px dashed var(--border-color-primary) !important; padding: 1rem !important; border-radius: 8px !important; background: var(--background-fill-secondary) !important; text-align: center !important; }
+.task-header { padding: 5px 10px !important; border-bottom: 1px solid var(--border-color-primary) !important; margin-bottom: 5px !important; }
+.task-header p { margin: 0 !important; font-size: 0.9em !important; color: var(--body-text-color-subdued) !important; }
 """
 
 
@@ -231,16 +240,33 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
             with gr.Column(scale=7):
                 with gr.Group() as approval_group:
                     gr.Markdown("Research Plan", elem_classes="header-bar")
-                    plan_editor = gr.Dataframe(
-                        value=[["", "auto", ""]],
-                        headers=["Task ID", "Source (auto/wikipedia/arxiv)", "Description"],
-                        type="array",
-                        column_count=(3, "fixed"),
-                        column_widths=["10%", "33%", "57%"],
-                        interactive=True,
-                        wrap=True,
-                        show_label=False
-                    )
+                    with gr.Row(elem_classes="task-header"):
+                        with gr.Column(scale=1, min_width=0):
+                            gr.Markdown("**Task ID**")
+                        with gr.Column(scale=2, min_width=0):
+                            gr.Markdown("**Source**")
+                        with gr.Column(scale=6, min_width=0):
+                            gr.Markdown("**Description**")
+                    task_components = []
+                    for i in range(8):
+                        with gr.Row(visible=False) as row:
+                            with gr.Column(scale=1, min_width=0):
+                                tid = gr.Textbox(interactive=False, container=False, show_label=False)
+                            with gr.Column(scale=2, min_width=0):
+                                tsrc = gr.Dropdown(
+                                    choices=["auto", "duckduckgo", "wikipedia", "arxiv"], 
+                                    value="auto",
+                                    interactive=True,
+                                    container=False,
+                                    show_label=False
+                                )
+                            with gr.Column(scale=6, min_width=0):
+                                tdesc = gr.Textbox(lines=2, interactive=True, container=False, show_label=False)
+                            
+                            task_components.append(row)
+                            task_components.append(tid)
+                            task_components.append(tsrc)
+                            task_components.append(tdesc)
                     with gr.Row():
                         approve_btn = gr.Button("Approve & Execute Plan", variant="primary", elem_classes="btn-green")
                         replan_btn = gr.Button("Regenerate Plan", variant="secondary", elem_classes="btn-blue")
@@ -263,28 +289,38 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
             scroll_helper = gr.HTML(visible=False, sanitize=False)
     # Event listeners
+    # Collect all component flattened outputs for planning
+    plan_outputs = task_components + [session_thread, output_display, log_output]
+    
     submit_btn.click(
         fn=run_query,
         inputs=[query_input, session_thread],
-        outputs=[plan_editor, session_thread, output_display, log_output],
+        outputs=plan_outputs,
         scroll_to_output=True
     )
     replan_btn.click(
         fn=replan,
         inputs=[query_input],
-        outputs=[plan_editor, session_thread, output_display, log_output],
+        outputs=plan_outputs,
         scroll_to_output=True
     )
+    
+    # Extract only the value-bearing components for approve_plan
+    # task_components is [row, id, source, desc, row, id, source, desc, ...]
+    value_components = []
+    for i in range(1, len(task_components), 4):
+        value_components.extend([task_components[i], task_components[i+1], task_components[i+2]])
+    
     approve_btn.click(
         fn=approve_plan,
-        inputs=[session_thread, plan_editor, log_output],
+        inputs=[session_thread, log_output] + value_components,
         outputs=[output_display, log_output, scroll_helper],
         scroll_to_output=True
     )
     clear_btn.click(
         fn=clear_ui,
         inputs=[session_thread],
-        outputs=[query_input, output_display, session_thread, plan_editor, log_output]
+        outputs=[query_input, output_display, session_thread] + task_components + [log_output]
     )
 
     # Verification Gate Listeners

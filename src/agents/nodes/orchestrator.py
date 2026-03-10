@@ -22,7 +22,7 @@ Focus on directly answering the user's question. Avoid redundant or overly broad
 Each task must have:
 - "id": A unique string ID (e.g. "task_1")
 - "description": The specific search query.
-- "source": Choose from: ["auto", "wikipedia", "arxiv"]. Use wikipedia for entities, arxiv for science/CS, and auto for general web.
+- "source": Choose from: ["auto", "duckduckgo", "wikipedia", "arxiv"]. Use wikipedia for entities, arxiv for science/CS, duckduckgo for general web, and auto for automatic routing.
 
 Return ONLY a valid JSON array. Ensure correct JSON syntax.
     """
@@ -56,6 +56,11 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
                     # Fill in missing fields if necessary
                     if not task.get("id"):
                         task["id"] = f"task_{i+1}"
+                    else:
+                        # Sanitize ID: remove common hallucinated artifacts like escaped quotes or JSON keys
+                        clean_id = str(task["id"]).replace('\\"', '').replace('"', '').replace('id:', '').strip()
+                        task["id"] = clean_id or f"task_{i+1}"
+                    
                     if not task.get("source"):
                         task["source"] = "auto"
                     validated_plan.append(task)

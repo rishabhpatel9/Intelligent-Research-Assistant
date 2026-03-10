@@ -47,9 +47,6 @@ def parse_json_robustly(raw_text: str):
         
     text = text[start:end+1]
 
-    # 3. Handle common LLM escaping hallucinations (e.g. \" used as delimiters)
-    text = text.replace('\\"', '"')
-
     # 4. Use json_repair for final cleanup (handles trailing commas, missing quotes, etc.)
     try:
         repaired = repair_json(text)

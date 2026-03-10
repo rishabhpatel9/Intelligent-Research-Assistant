@@ -1,16 +1,14 @@
 # Intelligent Research Assistant (Autonomous Research Studio)
 
-An advanced multi-agent swarm that automates deep research workflows through complex reasoning, multi-hop web scraping, and human-in-the-loop plan execution.
+The **Autonomous Research Studio** is a persistent multi-agent swarm designed to automate complex research workflows through multi-hop reasoning, deep web scraping, and human-in-the-loop plan execution. When given a request, an Orchestrator agent dynamically breaks down the problem into a sequential plan consisting of actionable sub tasks. The system then automatically scouts for information using an omni search strategy, reads and scrapes web pages deeply, and actively critiques its own findings, looping back to search again if the gathered data is insufficient.
 
-## Overview
-
-I built this platform to automate complex research workflows and make deep analysis accessible. Instead of a simple single shot query system, it acts as a persistent **Autonomous Research Studio** leveraging a multi-agent swarm. When given a request, an Orchestrator agent dynamically breaks down the problem into a sequential plan consisting of actionable sub-tasks. The system then automatically scouts for information using an omni search strategy, reads and scrapes web pages deeply, and actively critiques its own findings, looping back to search again if the gathered data is insufficient.
+[**Try out the live demo here!**](https://irademo.rish.click/)
 
 ## Core Features & Capabilities
 
 * **Multi-Agent Swarm Architecture:** The monolithic structure is broken down into persistent, specialized nodes (Orchestrator, Scout, Reader, Critic, Synthesizer) capable of deep, multi-hop reasoning.
 * **Human-in-the-Loop (HITL) Execution:** The frontend features an interactive Research Plan data grid allowing users to review, edit, and approve the Orchestrator's execution strategy *before* any heavy scraping or API credits are consumed.
-* **Omni-Search & Caching Strategy:** Integrates Wikipedia, ArXiv, and DuckDuckGo capabilities to prioritize high quality, free data sources, backed by an SQLite cache layer to instantly return data for repeated queries across sessions.
+* **Omni Search & Caching Strategy:** Integrates Wikipedia, ArXiv, and DuckDuckGo capabilities to prioritize high quality, free data sources, backed by an SQLite cache layer to instantly return data for repeated queries across sessions.
 * **Dynamic ReAct Critic:** A Critic node evaluates gathered data against the original task, acting as a dynamic ReAct loop that automatically generates refined follow up queries if the data is insufficient.
 * **Structured, Publication-Ready Output:** The Synthesizer agent gathers all structured intelligence and transforms it into a beautifully formatted Markdown report with an Executive Summary and strict, verifiable source citations.
 * **Progressive Web App (PWA) Frontend:** The refined Gradio interface provides a modern, responsive, and application like experience. The UI features custom rounded components, a carefully crafted theme, and an optimized reading layout.
@@ -113,6 +111,7 @@ Setup your environment variables by copying `example.env` to `.env`:
 ```bash
 cp example.env .env
 ```
+
 Ensure you add your `TAVILY_API_KEY` inside `.env`. Provide your Langsmith flags if you are leveraging them as well.
 
 Next, install the required dependencies using the `uv` package manager:
@@ -175,6 +174,7 @@ docker-compose up --build -d
 ```
 
 Running this command will automatically:
+
 1. Build both the `frontend` and `backend` images.
 2. Link them together seamlessly within a local docker network.
 3. Handle environment variable exposure using `.env`.
@@ -189,6 +189,7 @@ docker-compose down
 ## Future Improvements & Roadmap
 
 To further elevate this Intelligent Research Assistant and deliver unparalleled value, the following features are planned:
+
 - **Visual Graph & Agent Tracing**: An upcoming UI sidebar that visually displays real-time agent "thinking" and tracks how LangGraph execution graphs are traversed natively in the browser.
 - **Multi-Agent Debates**: Implementing a reviewer/supervisor agent that debates and critiques the primary agent's findings to ensure maximum rigor.
 - **Deep Persistent Memory**: Allowing the system to remember insights from past queries to build a personalized knowledge graph over time.

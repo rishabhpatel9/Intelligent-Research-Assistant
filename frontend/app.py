@@ -148,7 +148,7 @@ def clear_ui(current_thread_id: str):
         except Exception:
             # Best-effort cancel; UI should still clear even if this fails.
             pass
-    return "", "_Results will appear here..._", "", [], []
+    return "", "_Results will appear here..._", "", [["", "auto", ""]], []
 
 custom_theme = gr.themes.Soft(primary_hue="slate", secondary_hue="gray", neutral_hue="slate")
 

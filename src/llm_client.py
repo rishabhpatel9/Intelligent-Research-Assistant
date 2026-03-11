@@ -3,7 +3,7 @@ import os
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
 
-def query_llm(messages, model="qwen3.5-2b", temperature=0.1, json_mode=False):
+def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
     """Send conversation history to local LLM and return reply"""
     def _make_request(current_model, use_json):
         payload = {

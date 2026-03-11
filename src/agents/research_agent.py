@@ -26,6 +26,7 @@ graph.add_node("review_plan", review_plan_node)
 graph.add_node("scout", scout_node)
 graph.add_node("reader", reader_node)
 graph.add_node("critic", critic_node)
+graph.add_node("synthesis_init", lambda state: {"logs": ["Synthesizer: Initializing report drafting..."]})
 graph.add_node("synthesizer", synthesizer_node)
 
 # Define Entry Point
@@ -48,7 +49,7 @@ def route_critic(state: AgentState) -> str:
     
     # Check if we have a plan and all tasks have been completed and passed (id is in completed_tasks)
     if len(plan) > 0 and len(completed_tasks) == len(plan):
-        return "synthesizer"
+        return "synthesis_init"
     
     # Otherwise, loop back to the scout to fetch the missing/failed data
     return "scout"
@@ -57,10 +58,12 @@ graph.add_conditional_edges(
     "critic",
     route_critic,
     {
-        "synthesizer": "synthesizer",
+        "synthesis_init": "synthesis_init",
         "scout": "scout"
     }
 )
+
+graph.add_edge("synthesis_init", "synthesizer")
 
 graph.add_edge("synthesizer", END)
 

@@ -79,8 +79,10 @@ async def approve_plan(request: ApproveRequest):
                         msg = "Deep scraping selected sources..."
                     elif node_name == "critic":
                         msg = "Verifying if data fulfills the plan..."
-                    elif node_name == "synthesizer":
+                    elif node_name == "synthesis_init":
                         msg = "Drafting the final report..."
+                    elif node_name == "synthesizer":
+                        msg = "Finalizing research report..."
                     
                     yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
                     

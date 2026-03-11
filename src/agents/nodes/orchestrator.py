@@ -12,23 +12,36 @@ def orchestrator_node(state: AgentState) -> dict:
     # their token distribution, yielding a completely different alternative plan.
     
     prompt = f"""
+You are the Orchestration engine for an Autonomous Research Agent. Your goal is to take a user's research request and break it down into 3-5 distinct, targeted, and non-redundant search tasks.
+
 [Seed: {salt}]
-You are the Orchestrator for an Autonomous Research Studio.
 The user's research brief is: "{query}"
 
-Decompose this brief into a few (3-5) high-quality, focused, and actionable search tasks.
-Focus on directly answering the user's question. Avoid redundant or overly broad queries.
+### Output Requirements:
+1. **Format**: You MUST output a raw JSON array. 
+2. **No Wrappers**: Do not include markdown code blocks (e.g., ```json).
+3. **Task Structure**: Each object in the array must contain:
+   - "id": A unique string identifier (e.g., "task_1").
+   - "description": A specific, clear search query intended for a search engine.
+   - "source": One of ["auto", "wikipedia", "arxiv", "duckduckgo"].
 
-Each task must have:
-- "id": A unique string ID (e.g. "task_1")
-- "description": The specific search query.
-- "source": Choose from: ["auto", "duckduckgo", "wikipedia", "arxiv"]. Use wikipedia for entities, arxiv for science/CS, duckduckgo for general web, and auto for automatic routing.
+### Strategy:
+- **Entity Identification**: Use "wikipedia" for broad concepts or specific people/places.
+- **Scientific Depth**: Use "arxiv" for technical, mathematical, or computer science queries.
+- **Current Events**: Use "duckduckgo" for recent news or general web searches.
+- **Logical Flow**: Ensure tasks are sequential (e.g., define the concept before exploring its impacts).
 
-Return ONLY a valid JSON array. Ensure correct JSON syntax.
+### Examples:
+User: "How does CRISPR-Cas9 work and what are its ethical implications?"
+[
+  {{"id": "task_1", "description": "Mechanism of CRISPR-Cas9 gene editing technology", "source": "wikipedia"}},
+  {{"id": "task_2", "description": "Key scientific breakthroughs in CRISPR 2024-2025", "source": "arxiv"}},
+  {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo"}}
+]
     """
     
     messages = [
-        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON arrays. Do not escape double quotes unless they are part of the text CONTENT itself."},
+        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON arrays. No prose, no markdown wrappers."},
         {"role": "user", "content": prompt}
     ]
     

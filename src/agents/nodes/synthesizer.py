@@ -18,22 +18,23 @@ def synthesizer_node(state: AgentState) -> dict:
     context = "\n".join(context_blocks)
     
     prompt = f"""
-You are the Master Synthesizer for an Autonomous Research Studio.
-The user's original brief is: "{query}"
+You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high-density academic-style report.
 
-Using ONLY the verified research context provided below, synthesize a comprehensive, highly-detailed, and beautiful Markdown report.
-You must:
-1. Include an Executive Summary.
-2. Use headers, bullet points, and tables where appropriate to make data readable.
-3. Cite your sources inline using the [Source: X] metadata provided.
-4. If the context does not fully answer the brief, state what remains unknown.
-5. Provide a "References" section at the VERY END of the report. This section must list all the unique sources used in your report. Format each reference as a Markdown list item. If a source is a URL, it MUST be formatted as a clickable Markdown link (e.g., [Title or URL](URL)).
+User Query: "{query}"
+
+### Structural Requirements:
+1. **Header**: Start with a `# Research Report: [Topic]` title.
+2. **Executive Summary**: A brief 3-4 sentence overview of findings.
+3. **Formatting**: Use sub-headers (##), bullet points, and Bold text for emphasis. 
+4. **Citations**: Use inline citations like `[Source: X]` based on the metadata provided in the facts.
+5. **No Hallucinations**: Do not add information that is not present in the provided context.
+6. **Reference Table**: At the end, provide a `### References` section listing all sources as clickable markdown links.
 
 Context:
 {context}
 """
     messages = [
-        {"role": "system", "content": "You are an expert report writer. You output beautiful markdown."},
+        {"role": "system", "content": "You are an expert report writer. You output beautiful markdown. No conversational filler."},
         {"role": "user", "content": prompt}
     ]
     

@@ -47,34 +47,36 @@ def critic_node(state: AgentState) -> dict:
         mode = "simple" if is_simple else "standard"
         
         prompt = f"""
-You are the Critic in an Autonomous Research Studio.
-Your job is to objectively evaluate if the gathered data is sufficient to satisfy the research task.
+You are the Critic node in a research pipeline. Your job is to judge if the data gathered by a scout is enough to answer a specific query.
 
+### Context:
 Task Description: "{description}"
 Evaluation Mode: {mode}
 Gathered Data (snippet):
 {data[:3000]}
 
-Evaluation Criteria:
-If Evaluation Mode is "simple" (definition/overview questions):
-1. Pass if the snippet provides a clear, correct explanation/definition and basic context. Numbers/figures are NOT required.
-2. If the snippet contains only generic errors, placeholders, or mostly navigation links, fail.
-3. Prefer credible sources (Wikipedia, reputable orgs), but do not fail solely because the snippet is short.
+### Evaluation Rules:
+1. **Strictness**: If the snippet contains mostly error messages (403 Forbidden, Cloudflare blocks) or is just a list of navigation links, you MUST fail it.
+2. **Precision**: If the task asks for "2024 pricing" and the snippet only has "2023 pricing", you MUST fail it.
+3. **Follow-up**: If you fail a task, you must provide a highly specific "follow_up_query" that targets the missing information.
 
-If Evaluation Mode is "standard" (deeper research questions):
-1. Pass only if the snippet contains specific, relevant details that directly answer the task (facts, mechanisms, comparisons, key points).
-2. If the snippet is mostly navigation links or generic errors, fail.
-3. Consider source credibility.
+### Response Format:
+Output a single JSON object with these keys:
+- "pass": (boolean) true if the data is sufficient.
+- "reason": (string) concise explanation of your decision.
+- "follow_up_query": (string or null) the targeted search query to fix the failure.
 
-Respond ONLY with a valid JSON object:
-{{
-    "pass": true or false,
-    "reason": "Detailed explanation of why it passed or failed",
-    "follow_up_query": "If pass is false, provide a highly specific Google search query to find the missing data. If true, set to null."
-}}
+### Examples:
+Task: "Find the current stock price of NVIDIA"
+Data: "NVIDIA Corp (NVDA) is an American multinational technology company. It is known for its graphics processing units..."
+{{{{
+  "pass": false,
+  "reason": "The snippet provides a general description of the company but does not contain a specific current stock price.",
+  "follow_up_query": "NVIDIA (NVDA) current stock price real-time data"
+}}}}
 """
         messages = [
-            {"role": "system", "content": "You output only strictly valid JSON."},
+            {"role": "system", "content": "You output only strictly valid JSON. No prose, no markdown wrappers."},
             {"role": "user", "content": prompt}
         ]
         

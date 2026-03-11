@@ -1,6 +1,6 @@
 [project]
 name = "intelligent-research-assistant"
-version = "3.2.0"
+version = "3.3.0"
 description = "A GenAI powered intelligent agent that dynamically automates complex research workflows by intelligently searching, summarizing, fact checking, and synthesizing information."
 readme = "README.md"
 requires-python = ">=3.13"

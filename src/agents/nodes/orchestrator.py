@@ -18,9 +18,10 @@ You are the Orchestration engine for an Autonomous Research Agent. Your goal is 
 The user's research brief is: "{query}"
 
 ### Output Requirements:
-1. **Format**: You MUST output a raw JSON array. 
-2. **No Wrappers**: Do not include markdown code blocks (e.g., ```json).
-3. **Task Structure**: Each object in the array must contain:
+1. **Format**: You MUST output a valid JSON object. 
+2. **Key**: Wrap the list of tasks in a key called "tasks".
+3. **No Wrappers**: Do not include markdown code blocks (e.g., ```json).
+4. **Task Structure**: Each object in the "tasks" array must contain:
    - "id": A unique string identifier (e.g., "task_1").
    - "description": A specific, clear search query intended for a search engine.
    - "source": One of ["auto", "wikipedia", "arxiv", "duckduckgo"].
@@ -33,20 +34,22 @@ The user's research brief is: "{query}"
 
 ### Examples:
 User: "How does CRISPR-Cas9 work and what are its ethical implications?"
-[
-  {{"id": "task_1", "description": "Mechanism of CRISPR-Cas9 gene editing technology", "source": "wikipedia"}},
-  {{"id": "task_2", "description": "Key scientific breakthroughs in CRISPR 2024-2025", "source": "arxiv"}},
-  {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo"}}
-]
+{{
+  "tasks": [
+    {{"id": "task_1", "description": "Mechanism of CRISPR-Cas9 gene editing technology", "source": "wikipedia"}},
+    {{"id": "task_2", "description": "Key scientific breakthroughs in CRISPR 2024-2025", "source": "arxiv"}},
+    {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo"}}
+  ]
+}}
     """
     
     messages = [
-        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON arrays. No prose, no markdown wrappers."},
+        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers."},
         {"role": "user", "content": prompt}
     ]
     
     try:
-        response = query_llm(messages)
+        response = query_llm(messages, temperature=0.1, json_mode=True)
         plan = parse_json_robustly(response)
         
         # If the LLM returned a dictionary instead of a list, try to find the list inside it

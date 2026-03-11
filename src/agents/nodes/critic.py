@@ -81,7 +81,7 @@ Data: "NVIDIA Corp (NVDA) is an American multinational technology company. It is
         ]
         
         try:
-            response = query_llm(messages)
+            response = query_llm(messages, temperature=0.1, json_mode=True)
             parsed = parse_json_robustly(response)
             eval_result: Dict[str, Any] = parsed if isinstance(parsed, dict) else {}
             

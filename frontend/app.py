@@ -59,11 +59,25 @@ def run_query(query: str, thread_id: str):
                 messages = [
                     {
                         "role": "assistant", 
-                        "content": "\n".join(initial_logs) if initial_logs else "Orchestrator has analyzed the brief.",
-                        "metadata": {"title": "Orchestrator is Planning", "status": "done"}
+                        "content": "Orchestrator is analyzing the brief and generating a research plan...",
+                        "metadata": {"title": "Orchestrator is planning", "status": "pending"}
                     }
                 ]
                 
+                # If we have logs from the backend (like "Generated a X task plan"), 
+                # we add them as a second message that marks the planning as 'done'.
+                messages[0]["metadata"]["status"] = "done"
+                if initial_logs:
+                    messages.append({
+                        "role": "assistant",
+                        "content": "\n".join(initial_logs),
+                        "metadata": {"title": "Research plan created", "status": "done"}
+                    })
+                else:
+                    # If for some reason there are no logs but it succeeded, mark the first one as done
+                    messages[0]["metadata"]["title"] = "Research plan created"
+                    messages[0]["content"] = "Orchestrator has analyzed the brief."
+
                 return updates + [new_thread_id, "_Review the generated plan below._", messages]
             else:
                 return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, data.get("result", "Completed without output."), []]
@@ -293,6 +307,9 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     plan_outputs = task_components + [session_thread, output_display, log_output]
     
     submit_btn.click(
+        fn=lambda: [gr.update() for _ in range(8*4)] + ["", "_Orchestrator is planning..._", [{"role": "assistant", "content": "Orchestrator is analyzing the brief and generating a research plan...", "metadata": {"title": "Orchestrator is planning", "status": "pending"}}]],
+        outputs=plan_outputs
+    ).then(
         fn=run_query,
         inputs=[query_input, session_thread],
         outputs=plan_outputs,

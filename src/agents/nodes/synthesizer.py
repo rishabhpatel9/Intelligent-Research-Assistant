@@ -18,7 +18,7 @@ def synthesizer_node(state: AgentState) -> dict:
     context = "\n".join(context_blocks)
     
     prompt = f"""
-You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high-density academic-style report.
+You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high density academic style report. Avoid using unnecessary hyphens.
 The user's query is: "{query}"
 Using ONLY the verified research context provided below, synthesize a comprehensive, highly-detailed, and beautiful Markdown report.
 You must follow the following structural requirements:

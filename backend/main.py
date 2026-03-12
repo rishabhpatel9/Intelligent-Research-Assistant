@@ -3,6 +3,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional, Set
 from src.agents.research_agent import workflow
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 cancelled_threads: Set[str] = set()
@@ -100,7 +105,8 @@ async def approve_plan(request: ApproveRequest):
             else:
                 yield f"data: {json.dumps({'status': 'error', 'message': f'Paused at {state.next}'})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+            logger.exception("Error in event_generator stream")
+            yield f"data: {json.dumps({'status': 'error', 'message': 'An unexpected error occurred during processing. Please check the logs.'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

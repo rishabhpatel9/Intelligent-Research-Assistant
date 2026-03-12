@@ -60,7 +60,7 @@ def run_query(query: str, thread_id: str):
                     {
                         "role": "assistant", 
                         "content": "\n".join(initial_logs) if initial_logs else "Orchestrator has analyzed the brief.",
-                        "metadata": {"title": "Orchestrator: Planning", "status": "done"}
+                        "metadata": {"title": "Orchestrator is Planning", "status": "done"}
                     }
                 ]
                 

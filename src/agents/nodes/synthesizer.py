@@ -28,7 +28,7 @@ You must follow the following structural requirements:
 3. **Formatting**: Use sub-headers (##), bullet points, and Bold text for emphasis. 
 4. **Citations**: Use inline citations like `[Source: X]` based on the metadata provided in the facts.
 5. **No Hallucinations**: Do not add information that is not present in the provided context.
-6. **Reference Table**: At the end, provide a `### References` section listing all sources as clickable markdown links.
+6. **Reference Table**: At the end, provide a `### References` section listing all sources as clickable markdown links. Make sure each reference is listed in a new line.
 
 Context:
 {context}

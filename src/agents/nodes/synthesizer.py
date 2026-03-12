@@ -1,3 +1,4 @@
+import re
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 
@@ -13,7 +14,13 @@ def synthesizer_node(state: AgentState) -> dict:
     for idx, f in enumerate(passed_findings):
         src = f.get("source", "Unknown")
         data = f.get("scraped_data") or f.get("data", "No data")
-        context_blocks.append(f"--- Fact {idx+1} [Source: {src}] ---\n{data[:1500]}\n")
+        
+        # Extract URLs from findings to ensure they aren't lost in truncation
+        urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', data)
+        # Use first URL as the primary one for the header
+        url_text = f" | URL: {urls[0]}" if urls else ""
+        
+        context_blocks.append(f"--- Fact {idx+1} [Source: {src}{url_text}] ---\n{data[:2000]}\n")
         
     context = "\n".join(context_blocks)
     
@@ -26,9 +33,9 @@ You must follow the following structural requirements:
 1. **Header**: Start with a `# Research Report: [Topic]` title.
 2. **Executive Summary**: A brief 3-4 sentence overview of findings.
 3. **Formatting**: Use sub-headers (##), bullet points, and Bold text for emphasis. 
-4. **Citations**: Use inline citations like `[Source: X]` based on the metadata provided in the facts.
+4. **Citations**: Use inline citations like `[Fact X]` where X corresponds to the Fact number in the context below.
 5. **No Hallucinations**: Do not add information that is not present in the provided context.
-6. **Reference Table**: At the end, provide a `### References` section listing all sources as clickable markdown links. Make sure each reference is listed in a new line.
+6. **References Section**: At the end, provide a `### References` section. List all unique sources as a bulleted list (using `- `). Each reference MUST include a clickable markdown link to the URL provided in the context. Ensure each reference is on its own separate line.
 
 Context:
 {context}
@@ -43,4 +50,4 @@ Context:
     except Exception as e:
         final_report = f"[Synthesis Error] {e}"
         
-    return {"result": final_report, "logs": ["Synthesizer drafted the research report using verified findings."]}
+    return {"result": final_report, "logs": ["Synthesizer drafted the research report using verified findings."]}

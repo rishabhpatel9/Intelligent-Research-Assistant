@@ -34,7 +34,7 @@ Focus on directly answering the user's question. Avoid redundant or overly broad
 - **Current Events**: Use "duckduckgo" for recent news or general web searches.
 - **Logical Flow**: Ensure tasks are sequential (e.g., define the concept before exploring its impacts).
 
-### Examples:
+### Example JSON:
 User: "How does CRISPR-Cas9 work and what are its ethical implications?"
 {{
   "tasks": [
@@ -47,7 +47,7 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
     """
     
     messages = [
-        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself."},
+        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself. The Example JSON in user text is an example to show format, do not use the descripiton/content as output, come up with the questions based on the user query."},
         {"role": "user", "content": prompt}
     ]
     

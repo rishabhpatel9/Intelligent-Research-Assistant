@@ -12,10 +12,12 @@ def orchestrator_node(state: AgentState) -> dict:
     # their token distribution, yielding a completely different alternative plan.
     
     prompt = f"""
-You are the Orchestration engine for an Autonomous Research Agent. Your goal is to take a user's research request and break it down into 3-5 distinct, targeted, and non-redundant search tasks.
-
 [Seed: {salt}]
+You are the Orchestration node for an Autonomous Research Agent. Your goal is to take a user's research request and break it down into 1-5 distinct, targeted, and non-redundant search tasks to thoroughly answer the user's query.
 The user's research brief is: "{query}"
+
+Decompose this brief into a few (1-5) high-quality, focused, and actionable search tasks.
+Focus on directly answering the user's question. Avoid redundant or overly broad queries.
 
 ### Output Requirements:
 1. **Format**: You MUST output a valid JSON object. 
@@ -41,15 +43,16 @@ User: "How does CRISPR-Cas9 work and what are its ethical implications?"
     {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo"}}
   ]
 }}
+Return ONLY a valid JSON array. Ensure correct JSON syntax.
     """
     
     messages = [
-        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers."},
+        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself."},
         {"role": "user", "content": prompt}
     ]
     
     try:
-        response = query_llm(messages, temperature=0.1, json_mode=True)
+        response = query_llm(messages, json_mode=True)
         plan = parse_json_robustly(response)
         
         # If the LLM returned a dictionary instead of a list, try to find the list inside it
@@ -87,9 +90,9 @@ User: "How does CRISPR-Cas9 work and what are its ethical implications?"
         plan = []
 
     # Final fallback: if no valid tasks were generated, use the original query as a single task
-    status_msg = f"Orchestrator: Generated a {len(plan)}-task research plan."
+    status_msg = f"Generated a {len(plan)} task research plan."
     if not plan:
         plan = [{"id": "task_1", "description": query, "source": "auto"}]
-        status_msg = "Orchestrator: LLM failed to generate a structured plan. Falling back to simple research mode."
+        status_msg = "LLM failed to generate a structured plan. Falling back to simple research mode."
         
     return {"plan": plan, "logs": [status_msg]}

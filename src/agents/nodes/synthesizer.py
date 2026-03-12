@@ -19,9 +19,9 @@ def synthesizer_node(state: AgentState) -> dict:
     
     prompt = f"""
 You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high-density academic-style report.
-
-User Query: "{query}"
-
+The user's query is: "{query}"
+Using ONLY the verified research context provided below, synthesize a comprehensive, highly-detailed, and beautiful Markdown report.
+You must follow the following structural requirements:
 ### Structural Requirements:
 1. **Header**: Start with a `# Research Report: [Topic]` title.
 2. **Executive Summary**: A brief 3-4 sentence overview of findings.
@@ -43,4 +43,4 @@ Context:
     except Exception as e:
         final_report = f"[Synthesis Error] {e}"
         
-    return {"result": final_report, "logs": ["Synthesizer: Drafted research report using verified findings."]}
+    return {"result": final_report, "logs": ["Synthesizer drafted research report using verified findings."]}

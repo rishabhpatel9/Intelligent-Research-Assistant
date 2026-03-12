@@ -74,15 +74,15 @@ async def approve_plan(request: ApproveRequest):
                     event_type = "step_start"
                     msg = f"Agent '{node_name.capitalize()}' is processing..."
                     if node_name == "scout":
-                        msg = "Searching for background info..."
+                        msg = "Searching for background info"
                     elif node_name == "reader":
-                        msg = "Deep scraping selected sources..."
+                        msg = "Deep scraping sources"
                     elif node_name == "critic":
-                        msg = "Verifying if data fulfills the plan..."
+                        msg = "Verifying if data is useful"
                     elif node_name == "synthesis_init":
-                        msg = "Drafting the final report..."
+                        msg = "Completing your homework"
                     elif node_name == "synthesizer":
-                        msg = "Finalizing research report..."
+                        msg = "Check out the report!"
                     
                     yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
                     

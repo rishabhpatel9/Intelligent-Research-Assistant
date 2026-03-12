@@ -43,4 +43,4 @@ Context:
     except Exception as e:
         final_report = f"[Synthesis Error] {e}"
         
-    return {"result": final_report, "logs": ["Synthesizer drafted research report using verified findings."]}
+    return {"result": final_report, "logs": ["Synthesizer drafted the research report using verified findings."]}

@@ -26,7 +26,7 @@ graph.add_node("review_plan", review_plan_node)
 graph.add_node("scout", scout_node)
 graph.add_node("reader", reader_node)
 graph.add_node("critic", critic_node)
-graph.add_node("synthesis_init", lambda state: {"logs": ["Synthesizer is drafting final report based on collected data."]})
+graph.add_node("synthesis_init", lambda state: {"logs": ["Synthesizer is drafting the final report based on collected data."]})
 graph.add_node("synthesizer", synthesizer_node)
 
 # Define Entry Point

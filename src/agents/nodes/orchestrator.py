@@ -1,3 +1,4 @@
+from datetime import datetime
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 from src.utils.json_utils import parse_json_robustly
@@ -8,9 +9,10 @@ def orchestrator_node(state: AgentState) -> dict:
     
     import random
     salt = random.randint(1000, 9999)
-    # Use a random seed to ensure model output variety.
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     prompt = f"""
+[Today's Date: {current_date}]
 [Seed: {salt}]
 You are the Orchestration node for an Autonomous Research Agent. Your goal is to take a user's research request and break it down into 1-5 distinct, targeted, and non-redundant search tasks to thoroughly answer the user's query.
 The user's research brief is: "{query}"
@@ -26,6 +28,7 @@ Focus on directly answering the user's question. Avoid redundant or overly broad
    - "id": A unique string identifier (e.g., "task_1").
    - "description": A specific, clear search query intended for a search engine.
    - "source": One of ["auto", "wikipedia", "arxiv", "duckduckgo"].
+   - "timelimit": (Optional) Use "d" for day, "w" for week, "m" for month, or "y" for year.
 
 ### Strategy:
 - **Entity Identification**: Use "wikipedia" for broad concepts or specific people/places.
@@ -39,7 +42,7 @@ User: "How does CRISPR-Cas9 work and what are its ethical implications?"
   "tasks": [
     {{"id": "task_1", "description": "Mechanism of CRISPR-Cas9 gene editing technology", "source": "wikipedia"}},
     {{"id": "task_2", "description": "Key scientific breakthroughs in CRISPR 2024-2025", "source": "arxiv"}},
-    {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo"}}
+    {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo", "timelimit": "w"}}
   ]
 }}
 Return ONLY a valid JSON array. Ensure correct JSON syntax.
@@ -81,6 +84,8 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
                     
                     if not task.get("source"):
                         task["source"] = "auto"
+                    if not task.get("timelimit"):
+                        task["timelimit"] = None
                     validated_plan.append(task)
             plan = validated_plan
 

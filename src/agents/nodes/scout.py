@@ -2,7 +2,7 @@ from src.agents.state import AgentState
 from src.tools.search import run as omni_search
 
 def scout_node(state: AgentState) -> dict:
-    # Executes the research plan using the Omni_Search tool.
+    # Search for information based on the research plan.
     plan = state.get("plan") or []
     completed_tasks = state.get("completed_tasks") or []
     
@@ -31,7 +31,7 @@ def scout_node(state: AgentState) -> dict:
             new_completed.append(task_id)
         except Exception as e:
             print(f"[Scout] Error executing task {task_id}: {e}")
-            # Do not mark as complete if there's a hard crash, Critics might retry
+            # Skip marking as complete on failure to allow for retries.
             
     node_logs = []
     for f in new_findings:

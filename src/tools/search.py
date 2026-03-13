@@ -10,7 +10,7 @@ import arxiv
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 TAVILY_URL = "https://api.tavily.com/search"
 
-# Setup SQLite Cache
+# Initialize search result SQLite cache.
 CACHE_DB = "search_cache.db"
 def init_cache():
     conn = sqlite3.connect(CACHE_DB)
@@ -51,8 +51,7 @@ def search_duckduckgo(query: str) -> str:
 
 def search_wikipedia(query: str) -> str:
     try:
-        # Get a short summary from Wikipedia. Allow auto_suggest/redirect to
-        # make this more robust to slight query wording differences.
+        # Fetch a concise summary from Wikipedia.
         summary = wikipedia.summary(query, sentences=3, auto_suggest=True, redirect=True)
         return f"- Wikipedia: {query}\n  {summary}"
     except Exception:
@@ -85,8 +84,7 @@ def search_tavily(query: str) -> str:
         return None
 
 def run(query: str, source="auto") -> str:
-    # Omni-Search implementation. Source options: auto, duckduckgo, wikipedia, arxiv, tavily
-    # Check cache first
+    # Search across multiple platforms with automatic fallback.
     cached = get_cache(query, source)
     if cached:
         return f"[Cached {source}] \n{cached}"
@@ -95,14 +93,13 @@ def run(query: str, source="auto") -> str:
     applied_source = source
 
     if source == "wikipedia":
-        # Prefer Wikipedia, but gracefully fall back to DuckDuckGo if the
-        # direct API lookup fails (e.g., disambiguation, network issues).
+        # Search Wikipedia with fallback to general web search.
         result = search_wikipedia(query)
         if not result:
             applied_source = "duckduckgo"
             result = search_duckduckgo(query)
     elif source == "arxiv":
-        # Prefer ArXiv, but fall back to DuckDuckGo with a bias toward papers.
+        # Search ArXiv with fallback to general web search.
         result = search_arxiv(query)
         if not result:
             applied_source = "duckduckgo"
@@ -115,7 +112,7 @@ def run(query: str, source="auto") -> str:
         # "auto" fallback routing
         applied_source = "duckduckgo"
         result = search_duckduckgo(query)
-        if not result: # Fallback to Tavily
+        if not result:
             applied_source = "tavily"
             result = search_tavily(query)
 

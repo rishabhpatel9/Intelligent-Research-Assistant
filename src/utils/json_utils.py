@@ -3,15 +3,11 @@ import re
 from json_repair import repair_json
 
 def parse_json_robustly(raw_text: str):
-    """
-    Attempts to parse JSON from raw text robustly.
-    Handles markdown wrappers, trailing commas, and common LLM hallucinations.
-    Uses json_repair for deep fixes.
-    """
+    #Parse JSON content from text, handling common formatting issues.
     if not raw_text:
         return None
 
-    # 1. Clean markdown wrappers and whitespace
+    # Remove markdown formatting and extra whitespace.
     text = raw_text.strip()
     if text.startswith("```json"):
         text = text[7:]
@@ -21,8 +17,7 @@ def parse_json_robustly(raw_text: str):
         text = text[:-3]
     text = text.strip()
 
-    # 2. Extract the first JSON structure found (either object or array)
-    # This helps if there is leading/trailing conversational text
+    # Find the bounds of the JSON content.
     start_bracket = text.find('[')
     start_brace = text.find('{')
     
@@ -47,7 +42,7 @@ def parse_json_robustly(raw_text: str):
         
     text = text[start:end+1]
 
-    # 4. Use json_repair for final cleanup (handles trailing commas, missing quotes, etc.)
+    # Repair and parse the JSON string.
     try:
         repaired = repair_json(text)
         data = json.loads(repaired)
@@ -56,7 +51,7 @@ def parse_json_robustly(raw_text: str):
             return None
         return data
     except Exception as e:
-        # Fallback to standard json.loads if repair failed or produced invalid json
+        # Standard parsing fallback.
         try:
             data = json.loads(text)
             if not isinstance(data, (list, dict)):

@@ -2,13 +2,13 @@ from src.tools import search, summarize
 from src.llm_client import query_llm
 
 def run(query: str) -> str:
-    # If query is too long, treat it as summarize-only
+    # Summarize if the query appears to be a block of text.
     if len(query.split()) > 20:
         return summarize.run(query)
 
     search_results = search.run(query)
     
-    # Synthesize search results into a detailed report
+    # Create a combined report from search results.
     messages = [
         {"role": "system", "content": (
             "You are an expert research synthesizer. "
@@ -24,7 +24,6 @@ def run(query: str) -> str:
     
     synthesis = query_llm(messages)
 
-    # Return combined output with proper format
     formatted_output = (
         f"{synthesis}\n\n"
         "**Source References**\n"

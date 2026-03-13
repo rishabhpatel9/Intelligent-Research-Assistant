@@ -1,9 +1,8 @@
 from src.llm_client import query_llm
 
 def run(text: str) -> str:
-    # Produce thematic overview for short text or detailed summary for long text
+    # Generate a structured summary or thematic overview of the provided text.
     
-    # Use threshold to decide summary type
     if len(text.strip()) < 50:
         system_prompt = (
             "You are an expert summarizer. The user has provided limited context "

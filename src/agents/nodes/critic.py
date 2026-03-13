@@ -5,23 +5,23 @@ import re
 from typing import Any, Dict
 
 def critic_node(state: AgentState) -> dict:
-    # Evaluates if the collected findings are sufficient for a given task.
+    # Assess if the collected data is enough to answer the research task.
     plan = state.get("plan") or []
     findings = state.get("research_findings") or []
     completed_tasks = state.get("completed_tasks") or []
     
-    new_plan = list(plan) # Copy plan to safely modify
+    new_plan = list(plan)
     
     MAX_RETRIES = 2
 
     for task in plan:
         task_id = task.get("id")
         
-        # We only evaluate tasks that the Scout marked as 'completed' (i.e. it attempted them)
+        # Evaluate tasks completed by the search process.
         if task_id not in completed_tasks:
             continue
             
-        # Check if we already evaluated this task (we can add a 'passed' flag to the finding)
+        # Skip if already evaluated.
         task_finding = next((f for f in findings if f.get("task_id") == task_id), None)
         if not task_finding or task_finding.get("evaluated", False):
             continue
@@ -30,8 +30,7 @@ def critic_node(state: AgentState) -> dict:
         data = str((task_finding.get("scraped_data") or task_finding.get("data") or ""))
         attempts = int(task_finding.get("critic_attempts", 0))
 
-        # If we've already tried a couple of times and still don't have
-        # convincing data, stop looping and mark as best-effort.
+        # Stop reviewing after multiple attempts to avoid stalling.
         if attempts >= MAX_RETRIES:
             task_finding["evaluated"] = True
             task_finding["pass"] = True
@@ -91,19 +90,18 @@ Respond ONLY with a valid JSON object:
             print(f"[Critic] Task {task_id} Eval: PASS={task_finding['pass']} | Reason: {task_finding['reason']}")
             
             if not task_finding["pass"]:
-                # The Critic rejected it. We must loop back.
-                # Remove from completed so Scout picks it up again
+                # Allow the search process to retry failed tasks.
                 completed_tasks.remove(task_id)
-                # Update the task description with the Crits's suggested follow up
+                # Refine the query based on missing information.
                 for p in new_plan:
                     if p["id"] == task_id:
                         p["description"] = eval_result.get("follow_up_query", description)
-                        p["source"] = "auto" # Force general search on retry
+                        p["source"] = "auto"
                         
         except Exception as e:
             print(f"[Critic] Failed to evaluate {task_id}: {e}")
             task_finding["evaluated"] = True
-            task_finding["pass"] = True # Default to pass if LLM fails formatting to prevent infinite loop
+            task_finding["pass"] = True # Pass by default on evaluation errors to avoid infinite loops.
             task_finding["reason"] = f"Evaluation failed error: {str(e)}"
 
             

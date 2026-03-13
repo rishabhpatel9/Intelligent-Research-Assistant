@@ -4,7 +4,7 @@ import os
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
 
 def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
-    """Send conversation history to local LLM and return reply"""
+    # Send messages to the language model and return the response.
     def _make_request(current_model, use_json):
         payload = {
             "model": current_model,
@@ -25,7 +25,7 @@ def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
         except Exception as e:
             raise e
 
-    # Logic: Try primary model with requested mode -> Try primary model without JSON mode -> Try fallback model
+    # Attempt to get a response from the model with automatic fallbacks.
     try:
         return _make_request(model, json_mode)
     except Exception as e:
@@ -39,7 +39,7 @@ def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
         if model == "qwen3.5-2b":
             print(f"[LLM] Falling back to qwen3.5-0.8b. Original Error: {str(e)}")
             try:
-                return _make_request("qwen3.5-0.8b", False) # Fallback never uses JSON mode for safety
+                return _make_request("qwen3.5-0.8b", False)
             except Exception as e2:
                 return f"[LLM Error] Fallback also failed: {str(e2)}"
         return f"[LLM Error] {str(e)}"

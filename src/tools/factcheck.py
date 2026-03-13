@@ -3,19 +3,16 @@ from src.tools import search
 from src.utils.web_content import fetch_web_content
 
 def run(query: str) -> str:
-    # Verify claim by fetching web content and analyzing via LLM
+    # Verify a claim by analyzing information from multiple web sources.
     
-    # Step 1: Run search
     search_results = search.run(query)
 
-    # Step 2: Extract top 4 URLs
     urls = []
     for line in search_results.splitlines():
         if line.strip().startswith("http"):
             urls.append(line.strip())
     urls = urls[:4]
 
-    # Step 3: Fetch content
     evidence_texts = []
     for url in urls:
         content = fetch_web_content(url)
@@ -23,7 +20,6 @@ def run(query: str) -> str:
 
     combined_evidence = "\n\n".join(evidence_texts)
 
-    # Step 4: Ask LLM to analyze
     messages = [
         {"role": "system", "content": (
             "You are a rigorous, objective fact checking assistant. "
@@ -39,7 +35,6 @@ def run(query: str) -> str:
 
     analysis = query_llm(messages)
 
-    # Step 5: Format output
     formatted_output = (
         "**Evidence Gathered (Top 4 Sources)**\n"
         f"{combined_evidence}\n\n"

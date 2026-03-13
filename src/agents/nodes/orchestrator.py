@@ -8,8 +8,7 @@ def orchestrator_node(state: AgentState) -> dict:
     
     import random
     salt = random.randint(1000, 9999)
-    # Adding a random salt instruction variation forces exactly deterministic local LLMs to re-sample
-    # their token distribution, yielding a completely different alternative plan.
+    # Use a random seed to ensure model output variety.
     
     prompt = f"""
 [Seed: {salt}]
@@ -55,28 +54,28 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
         response = query_llm(messages, json_mode=True)
         plan = parse_json_robustly(response)
         
-        # If the LLM returned a dictionary instead of a list, try to find the list inside it
+        # Extract task list from response dictionary.
         if isinstance(plan, dict):
             for key in ["tasks", "plan", "subtasks", "research_tasks"]:
                 if key in plan and isinstance(plan[key], list):
                     plan = plan[key]
                     break
         
-        # Validate that plan is a list of tasks
+        # Ensure the plan contains actionable tasks.
         if not isinstance(plan, list) or not plan:
             print(f"Orchestrator returned empty or invalid plan format: {plan}")
             plan = []
             
-        # Ensure each item in the plan is a dictionary with at least 'description'
+        # Validate each task contains a valid description.
         if plan:
             validated_plan = []
             for i, task in enumerate(plan):
                 if isinstance(task, dict) and task.get("description"):
-                    # Fill in missing fields if necessary
+                    # Set default values for missing task fields.
                     if not task.get("id"):
                         task["id"] = f"task_{i+1}"
                     else:
-                        # Sanitize ID: remove common hallucinated artifacts like escaped quotes or JSON keys
+                        # Clean up task ID to remove formatting artifacts.
                         clean_id = str(task["id"]).replace('\\"', '').replace('"', '').replace('id:', '').strip()
                         task["id"] = clean_id or f"task_{i+1}"
                     
@@ -89,7 +88,7 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
         print(f"Failed to parse orchestrator JSON. Error: {e}\nRaw Response: {response}")
         plan = []
 
-    # Final fallback: if no valid tasks were generated, use the original query as a single task
+    # Default to a single research task if no structured plan is available.
     status_msg = f"Generated a {len(plan)} task research plan."
     if not plan:
         plan = [{"id": "task_1", "description": query, "source": "auto"}]

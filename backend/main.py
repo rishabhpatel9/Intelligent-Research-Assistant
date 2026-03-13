@@ -5,7 +5,7 @@ from typing import Optional, Set
 from src.agents.research_agent import workflow
 import logging
 
-# Configure logging
+# Standard logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def run_query(request: QueryRequest):
     thread_id = request.thread_id or str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
     
-    # We pass the initial state (we need to ensure lists are empty if not provided)
+    # Initialize the research state with default values.
     initial_state = {
         "query": request.query,
         "category": "",
@@ -43,7 +43,7 @@ def run_query(request: QueryRequest):
     state = workflow.get_state(config)
     
     if state.next:
-        # Paused at 'review_plan' for HITL
+        # Pause for user review of the research plan.
         vals = state.values or {}
         plan = vals.get("plan") or []
         initial_logs = vals.get("logs") or []
@@ -63,10 +63,9 @@ async def approve_plan(request: ApproveRequest):
         
     def event_generator():
         try:
-            # Stream the events from the compiled LangGraph workflow
-            # Using stream_mode="values" or "updates"
+            # Stream progress updates from the research workflow.
             for chunk in workflow.stream(None, config=config, stream_mode="updates"):
-                # Check for external cancellation request
+                # Handle cancellation requests.
                 if request.thread_id in cancelled_threads:
                     cancelled_threads.discard(request.thread_id)
                     yield f"data: {json.dumps({'status': 'cancelled', 'thread_id': request.thread_id})}\n\n"
@@ -75,7 +74,7 @@ async def approve_plan(request: ApproveRequest):
                     node_name = list(chunk.keys())[0]
                     node_data = chunk[node_name]
                     
-                    # 1. Yield the generic "starting" message as a step_start event
+                    # Send an update when a new stage begins.
                     event_type = "step_start"
                     msg = f"Agent '{node_name.capitalize()}' is processing..."
                     if node_name == "scout":
@@ -91,7 +90,7 @@ async def approve_plan(request: ApproveRequest):
                     
                     yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
                     
-                    # 2. Yield detailed logs returned by the node, batched to avoid UI thrashing
+                    # Send detailed logs for the current stage.
                     if isinstance(node_data, dict) and "logs" in node_data:
                         logs = node_data.get("logs") or []
                         if logs:

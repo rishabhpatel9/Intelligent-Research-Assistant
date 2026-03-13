@@ -3,11 +3,11 @@ from src.llm_client import query_llm
 from src.agents.state import AgentState
 
 def synthesizer_node(state: AgentState) -> dict:
-    # Compiles the final beautiful dossier.
+    # Create the final research report.
     query = state.get("query")
     findings = state.get("research_findings") or []
     
-    # We only want to synthesize findings that passed the critic
+    # Focus on findings that have been verified.
     passed_findings = [f for f in findings if f.get("pass", True)]
     
     context_blocks = []
@@ -18,7 +18,7 @@ def synthesizer_node(state: AgentState) -> dict:
         src = f.get("source", "Unknown")
         data = f.get("scraped_data") or f.get("data", "No data")
         
-        # Extract URLs from findings
+        # Identify source URLs for references.
         urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', data)
         primary_url = ""
         if urls:

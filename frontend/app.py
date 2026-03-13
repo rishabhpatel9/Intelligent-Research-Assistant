@@ -27,10 +27,9 @@ def get_empty_df():
 
 def run_query(query: str, thread_id: str):
     if not query.strip():
-        # Clear output
         return [gr.update(visible=False) for _ in range(8*4)] + [thread_id, "Please enter a query!", []]
 
-    # Force a completely new execution thread whenever a new plan is requested
+    # Reset the execution thread for a new research request.
     thread_id = ""
 
     try:
@@ -42,16 +41,15 @@ def run_query(query: str, thread_id: str):
                 plan = data.get("plan", [])
                 initial_logs = data.get("logs", [])
                 
-                # Format plan into task updates
                 updates = []
                 for i in range(8):
                     if i < len(plan):
                         task = plan[i]
                         updates.extend([
-                            gr.update(visible=True), # row
-                            gr.update(value=task.get("id", f"task_{i+1}"), visible=True), # id
-                            gr.update(value=task.get("source", "auto"), visible=True), # source
-                            gr.update(value=task.get("description", ""), visible=True) # description
+                            gr.update(visible=True),
+                            gr.update(value=task.get("id", f"task_{i+1}"), visible=True),
+                            gr.update(value=task.get("source", "auto"), visible=True),
+                            gr.update(value=task.get("description", ""), visible=True)
                         ])
                     else:
                         updates.extend([gr.update(visible=False)] * 4)
@@ -64,8 +62,7 @@ def run_query(query: str, thread_id: str):
                     }
                 ]
                 
-                # If we have logs from the backend (like "Generated a X task plan"), 
-                # we add them as a second message that marks the planning as 'done'.
+                # Mark planning as complete if logs are available.
                 messages[0]["metadata"]["status"] = "done"
                 if initial_logs:
                     messages.append({
@@ -74,7 +71,7 @@ def run_query(query: str, thread_id: str):
                         "metadata": {"title": "Research plan created", "status": "done"}
                     })
                 else:
-                    # If for some reason there are no logs but it succeeded, mark the first one as done
+                    # Mark the first message as done if no detailed logs are available.
                     messages[0]["metadata"]["title"] = "Research plan created"
                     messages[0]["content"] = "Orchestrator has analyzed the brief."
 
@@ -89,12 +86,11 @@ def run_query(query: str, thread_id: str):
 import json
 
 def approve_plan(thread_id: str, current_messages, *task_inputs):
-    """Approve the plan and stream log messages from the backend."""
+    #Confirm the plan and stream progress updates from the server.
     if not thread_id:
         yield "", current_messages, ""
         return
 
-    # Use existing messages from Orchestrator
     messages = list(current_messages) if current_messages else []
     current_step_title = None
  
@@ -102,7 +98,6 @@ def approve_plan(thread_id: str, current_messages, *task_inputs):
 
     try:
         new_plan = []
-        # task_inputs is a flat list of (id, source, description) * 8
         for i in range(0, 24, 3):
             task_id = task_inputs[i]
             source = str(task_inputs[i+1] if task_inputs[i+1] is not None else "auto").lower()
@@ -125,21 +120,15 @@ def approve_plan(thread_id: str, current_messages, *task_inputs):
                                 event = data.get("event")
                                 
                                 if event == "step_start":
-                                    # Mark previous assistant messages as done before starting a new step
+                                    # Finalize previous status updates.
                                     for m in messages:
                                         if m.get("role") == "assistant" and m.get("metadata", {}).get("status") == "pending":
                                             m["metadata"]["status"] = "done"
 
-                                    # Remember the current step title; individual logs will
-                                    # carry this in their metadata so we don't need an
-                                    # empty placeholder message.
                                     current_step_title = data.get("message", "Agent processing...")
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                 
                                 elif event == "step_log":
-                                    # Append each log entry as its own message with the
-                                    # appropriate step title so the Thinking Log remains
-                                    # readable and avoids an initial empty entry.
                                     log_entry = data.get("log", "")
                                     step_title = current_step_title or "Agent processing..."
                                     messages.append({
@@ -150,7 +139,7 @@ def approve_plan(thread_id: str, current_messages, *task_inputs):
                                     yield "_Synthesis in progress... Listening to agents..._", messages, ""
                                         
                                 elif data.get("status") == "completed":
-                                    # Mark all assistant messages as done once the run completes
+                                     # Finalize status updates on completion.
                                     for m in messages:
                                         if m.get("role") == "assistant":
                                             m.setdefault("metadata", {})
@@ -174,16 +163,14 @@ def approve_plan(thread_id: str, current_messages, *task_inputs):
         yield f"An error occurred: {str(e)}", messages, ""
 
 def replan(query: str):
-    # Pass an empty thread to force a new execution graph
     return run_query(query, "")
 
 def clear_ui(current_thread_id: str):
-    # Signal the backend to cancel any in-flight run for this thread.
+    # Cancel any active research for the current thread.
     if current_thread_id:
         try:
             requests.post(f"{API_URL}/cancel", json={"thread_id": current_thread_id}, timeout=3)
         except Exception:
-            # Best-effort cancel; UI should still clear even if this fails.
             pass
     return ["", "_Results will appear here..._", ""] + [gr.update(visible=False) for _ in range(8*4)] + [[]]
 
@@ -297,7 +284,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                         buttons=["copy_all"],
                         elem_classes="log-sidebar"
                     )
-                    # Force autoscroll via JS since high-frequency updates can break Gradio's native autoscroll
+                    # Maintain automatic scrolling for the log view.
                     log_output.change(None, None, None, js="""
                         () => {
                             const container = document.querySelector('.log-sidebar div.wrapper');
@@ -311,8 +298,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
             gr.Markdown("Output", elem_classes="header-bar")
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
             scroll_helper = gr.HTML(visible=False, sanitize=False)
-    # Event listeners
-    # Collect all component flattened outputs for planning
+    
     plan_outputs = task_components + [session_thread, output_display, log_output]
     
     submit_btn.click(
@@ -325,7 +311,6 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         scroll_to_output=True
     )
     
-    # Allow Ctrl+Enter to submit the research brief
     query_input.submit(
         fn=lambda: [gr.update() for _ in range(8*4)] + ["", "_Orchestrator is planning..._", [{"role": "assistant", "content": "Orchestrator is analyzing the brief and generating a research plan...", "metadata": {"title": "Orchestrator is planning", "status": "pending"}}]],
         outputs=plan_outputs
@@ -343,8 +328,6 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         scroll_to_output=True
     )
     
-    # Extract only the value-bearing components for approve_plan
-    # task_components is [row, id, source, desc, row, id, source, desc, ...]
     value_components = []
     for i in range(1, len(task_components), 4):
         value_components.extend([task_components[i], task_components[i+1], task_components[i+2]])

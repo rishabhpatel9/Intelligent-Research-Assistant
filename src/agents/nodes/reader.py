@@ -17,15 +17,13 @@ def fetch_and_extract(url: str) -> str:
         
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Remove noisy elements
+        # Strip non-content elements.
         for script in soup(["script", "style", "nav", "footer", "header"]):
             script.decompose()
             
         text = soup.get_text(separator=' ', strip=True)
-        # Compress whitespace
         text = re.sub(r'\s+', ' ', text)
         
-        # Return first 3000 characters to avoid entirely blowing up LLM context
         return text[:3000] 
     except Exception as e:
         return f"[Scrape Error: {str(e)}]"
@@ -36,8 +34,6 @@ def reader_node(state: AgentState) -> dict:
     
     updated_findings = []
     
-    # We only want to scrape newly added findings. For simplicity in this iteration, 
-    # we just check if 'scraped_data' key exists on the finding.
     
     for finding in findings:
         if "scraped_data" in finding:
@@ -45,25 +41,19 @@ def reader_node(state: AgentState) -> dict:
             continue
             
         raw_data = finding.get("data", "")
-        # Deep scraping is mainly targeted at general web search results.
-        # For structured sources like Wikipedia/ArXiv we keep the original data.
+        # Scrape web links; keep structured data.
         source = finding.get("source")
         if source in ["duckduckgo", "tavily", "auto"]:
             urls = extract_urls(raw_data)
             
             scraped_content = []
-            # Scrape up to 2 URLs per finding to save time/context
             for url in urls[:2]:
                 print(f"[Reader] Deep Scraping: {url}")
                 extracted = fetch_and_extract(url)
                 scraped_content.append(f"Source: {url}\n{extracted}\n")
             
-            # Append scraped data to the finding
             finding["scraped_data"] = "\n\n".join(scraped_content)
         else:
-            # Not a standard web result, no deep scrape needed; preserve the
-            # original content so downstream nodes (e.g. Critic) see real data
-            # instead of a placeholder string.
             finding["scraped_data"] = finding.get("data", "")
             
         updated_findings.append(finding)
@@ -71,11 +61,9 @@ def reader_node(state: AgentState) -> dict:
     scraped_urls = []
     for f in updated_findings:
         if "scraped_data" in f and f["scraped_data"] != "Not applicable for this source.":
-            # Extract URLs from the scraped content for logging
             urls = extract_urls(f.get("data", ""))
             scraped_urls.extend(urls[:2])
             
     node_logs = [f"Reader: Deep scraped {url}" for url in scraped_urls]
     
-    # Return it to comply with LangGraph structure
     return {"research_findings": updated_findings, "logs": node_logs}

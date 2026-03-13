@@ -242,7 +242,7 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         
         with gr.Group():
             gr.Markdown("Research Brief", elem_classes="header-bar")
-            query_input = gr.Textbox(lines=3, placeholder="Enter your complex research brief here...", show_label=False)
+            query_input = gr.Textbox(placeholder="Enter your complex research brief here...", show_label=False)
             with gr.Row():
                 submit_btn = gr.Button("Plan Research", variant="primary", scale=2, elem_classes="btn-green")
                 clear_btn = gr.Button("Clear", variant="secondary", scale=1, elem_classes="btn-red")
@@ -324,6 +324,18 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         outputs=plan_outputs,
         scroll_to_output=True
     )
+    
+    # Allow Ctrl+Enter to submit the research brief
+    query_input.submit(
+        fn=lambda: [gr.update() for _ in range(8*4)] + ["", "_Orchestrator is planning..._", [{"role": "assistant", "content": "Orchestrator is analyzing the brief and generating a research plan...", "metadata": {"title": "Orchestrator is planning", "status": "pending"}}]],
+        outputs=plan_outputs
+    ).then(
+        fn=run_query,
+        inputs=[query_input, session_thread],
+        outputs=plan_outputs,
+        scroll_to_output=True
+    )
+
     replan_btn.click(
         fn=replan,
         inputs=[query_input],

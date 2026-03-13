@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 
@@ -6,6 +7,7 @@ def synthesizer_node(state: AgentState) -> dict:
     # Create the final research report.
     query = state.get("query")
     findings = state.get("research_findings") or []
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Focus on findings that have been verified.
     passed_findings = [f for f in findings if f.get("pass", True)]
@@ -34,6 +36,7 @@ def synthesizer_node(state: AgentState) -> dict:
     
     prompt = f"""
 You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high density academic style report. Avoid using unnecessary hyphens.
+Today's Date: {current_date}
 The user's query is: "{query}"
 
 Using ONLY the verified research context provided below, synthesize a comprehensive, highly-detailed, and beautiful Markdown report.

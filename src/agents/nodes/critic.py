@@ -1,3 +1,4 @@
+from datetime import datetime
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 from src.utils.json_utils import parse_json_robustly
@@ -11,6 +12,7 @@ def critic_node(state: AgentState) -> dict:
     completed_tasks = state.get("completed_tasks") or []
     
     new_plan = list(plan)
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     MAX_RETRIES = 2
 
@@ -49,6 +51,7 @@ def critic_node(state: AgentState) -> dict:
 You are the Critic node in a research pipeline. Your job is to judge if the data gathered by a scout is enough to answer a specific query.
 
 ### Context:
+Today's Date: {current_date}
 Task Description: "{description}"
 Evaluation Mode: {mode}
 Gathered Data (snippet):

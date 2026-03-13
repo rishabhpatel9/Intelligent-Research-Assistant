@@ -40,9 +40,9 @@ def set_cache(query: str, source: str, result: str):
     conn.commit()
     conn.close()
 
-def search_duckduckgo(query: str) -> str:
+def search_duckduckgo(query: str, timelimit: str = None) -> str:
     try:
-        results = DDGS().text(query, max_results=3)
+        results = DDGS().text(query, max_results=3, timelimit=timelimit)
         if not results: return None
         formatted = "\n".join([f"- {r['title']}\n  {r['body']}\n  {r['href']}" for r in results])
         return formatted
@@ -83,7 +83,7 @@ def search_tavily(query: str) -> str:
     except Exception:
         return None
 
-def run(query: str, source="auto") -> str:
+def run(query: str, source="auto", timelimit: str = None) -> str:
     # Search across multiple platforms with automatic fallback.
     cached = get_cache(query, source)
     if cached:
@@ -97,21 +97,21 @@ def run(query: str, source="auto") -> str:
         result = search_wikipedia(query)
         if not result:
             applied_source = "duckduckgo"
-            result = search_duckduckgo(query)
+            result = search_duckduckgo(query, timelimit=timelimit)
     elif source == "arxiv":
         # Search ArXiv with fallback to general web search.
         result = search_arxiv(query)
         if not result:
             applied_source = "duckduckgo"
-            result = search_duckduckgo(f"{query} arxiv")
+            result = search_duckduckgo(f"{query} arxiv", timelimit=timelimit)
     elif source == "tavily":
         result = search_tavily(query)
     elif source == "duckduckgo":
-        result = search_duckduckgo(query)
+        result = search_duckduckgo(query, timelimit=timelimit)
     else:
         # "auto" fallback routing
         applied_source = "duckduckgo"
-        result = search_duckduckgo(query)
+        result = search_duckduckgo(query, timelimit=timelimit)
         if not result:
             applied_source = "tavily"
             result = search_tavily(query)

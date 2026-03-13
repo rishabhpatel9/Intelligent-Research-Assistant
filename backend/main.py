@@ -91,11 +91,12 @@ async def approve_plan(request: ApproveRequest):
                     
                     yield f"data: {json.dumps({'event': 'step_start', 'node': node_name, 'message': msg})}\n\n"
                     
-                    # 2. Yield any detailed logs returned by the node itself
+                    # 2. Yield detailed logs returned by the node, batched to avoid UI thrashing
                     if isinstance(node_data, dict) and "logs" in node_data:
                         logs = node_data.get("logs") or []
-                        for log_entry in logs:
-                            yield f"data: {json.dumps({'event': 'step_log', 'node': node_name, 'log': log_entry})}\n\n"
+                        if logs:
+                            combined_log = "\n".join(logs)
+                            yield f"data: {json.dumps({'event': 'step_log', 'node': node_name, 'log': combined_log})}\n\n"
                     
             state = workflow.get_state(config)
             vals = state.values or {}

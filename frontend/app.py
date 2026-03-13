@@ -297,6 +297,15 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                         buttons=["copy_all"],
                         elem_classes="log-sidebar"
                     )
+                    # Force autoscroll via JS since high-frequency updates can break Gradio's native autoscroll
+                    log_output.change(None, None, None, js="""
+                        () => {
+                            const container = document.querySelector('.log-sidebar div.wrapper');
+                            if (container) {
+                                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                            }
+                        }
+                    """)
 
         with gr.Group():
             gr.Markdown("Output", elem_classes="header-bar")

@@ -16,11 +16,12 @@ def scout_node(state: AgentState) -> dict:
             
         description = task.get("description")
         source = task.get("source", "auto")
+        timelimit = task.get("timelimit")
         
-        print(f"[Scout] Executing query: '{description}' via source: {source}")
+        print(f"[Scout] Executing query: '{description}' via source: {source} (Time: {timelimit})")
         
         try:
-            raw_result = omni_search(description, source=source)
+            raw_result = omni_search(description, source=source, timelimit=timelimit)
             finding = {
                 "task_id": task_id,
                 "query": description,

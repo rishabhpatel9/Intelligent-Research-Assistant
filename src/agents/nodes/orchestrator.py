@@ -31,26 +31,23 @@ Focus on directly answering the user's question. Avoid redundant or overly broad
    - "timelimit": (Optional) Use "d" for day, "w" for week, "m" for month, or "y" for year.
 
 ### Strategy:
-- **Entity Identification**: Use "wikipedia" for broad concepts or specific people/places.
-- **Scientific Depth**: Use "arxiv" for technical, mathematical, or computer science queries.
-- **Current Events**: Use "duckduckgo" for recent news or general web searches.
-- **Temporal Precision**: For time sensitive queries, include the current year/date ({current_date[:10]}) directly in the task description to ensure fresh results.
-- **Logical Flow**: Ensure tasks are sequential (e.g., define the concept before exploring its impacts).
+1. **Wikipedia/Concepts**: Use for broad, foundational concepts.
+2. **Arxiv/Scientific**: Use for technical depth.
+3. **DuckDuckGo/General**: Use for recent news/web.
+4. **Conditional Temporal Precision**: 
+   - ONLY include specific dates (e.g. {current_date[:10]}) or the year (e.g. {current_date[:4]}) if the user's brief mentions time-sensitive keywords: "latest", "2026", "today", "current", "updated", "recent breakthroughs".
+   - DO NOT append the year for general questions (like 'What is X?').
 
-### Example JSON:
-User: "How does CRISPR-Cas9 work and what are its ethical implications?"
-{{
-  "tasks": [
-    {{"id": "task_1", "description": "Mechanism of CRISPR-Cas9 gene editing technology", "source": "wikipedia"}},
-    {{"id": "task_2", "description": "Key scientific breakthroughs in CRISPR 2024-2025", "source": "arxiv"}},
-    {{"id": "task_3", "description": "Major ethical concerns and global regulations regarding germline gene editing", "source": "duckduckgo", "timelimit": "w"}}
-  ]
-}}
-Return ONLY a valid JSON array. Ensure correct JSON syntax.
+### Output Requirements:
+1. **Format**: Valid JSON object. 
+2. **Key**: Wrap tasks in a key called "tasks".
+3. **Task Structure**: {{"id": "...", "description": "...", "source": "...", "timelimit": "..."}}
+
+Return ONLY the JSON. No prose.
     """
     
     messages = [
-        {"role": "system", "content": f"You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself. The Example JSON in user text is an example to show format, do not use the descripiton/content as output, come up with the questions based on the user query. Treat every request as a fresh task with no previous context. The current year is {current_date[:4]}. If the query is about news or real time data, ensure your search descriptions include the year/date to prevent outdated results."},
+        {"role": "system", "content": f"You are a JSON generator. Treat every request as a fresh task. The current year is {current_date[:4]}. ONLY include the year in search descriptions if the user query is clearly about news, recent events, or real-time data. For general/foundational questions, keep the search query timeless."},
         {"role": "user", "content": prompt}
     ]
     

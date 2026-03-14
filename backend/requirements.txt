@@ -10,3 +10,4 @@ ddgs>=9.11.2
 wikipedia>=1.4.0
 arxiv>=2.4.1
 json-repair>=0.58.5
+pymupdf>=1.24.0

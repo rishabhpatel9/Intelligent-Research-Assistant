@@ -6,37 +6,58 @@ import requests
 from ddgs import DDGS
 import wikipedia
 import arxiv
+import time
+from datetime import datetime, timedelta
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 TAVILY_URL = "https://api.tavily.com/search"
 
-# Initialize search result SQLite cache.
+# Initialize search result SQLite cache with TTL support.
 CACHE_DB = "search_cache.db"
 def init_cache():
     conn = sqlite3.connect(CACHE_DB)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS search_cache
-                 (query_hash TEXT PRIMARY KEY, query TEXT, source TEXT, result TEXT)''')
+    # Migration: Add timestamp if it doesn't exist
+    c.execute("PRAGMA table_info(search_cache)")
+    columns = [row[1] for row in c.fetchall()]
+    if not columns:
+        c.execute('''CREATE TABLE IF NOT EXISTS search_cache
+                     (query_hash TEXT PRIMARY KEY, query TEXT, source TEXT, result TEXT, timestamp DATETIME)''')
+    elif "timestamp" not in columns:
+        print("[Cache] Migrating database to add timestamp column...")
+        c.execute("ALTER TABLE search_cache ADD COLUMN timestamp DATETIME")
     conn.commit()
     conn.close()
 
 init_cache()
 
-def get_cache(query: str, source: str) -> str:
+def get_cache(query: str, source: str, ttl_hours: int = None) -> str:
     query_hash = hashlib.sha256(f"{source}:{query.lower().strip()}".encode()).hexdigest()
     conn = sqlite3.connect(CACHE_DB)
     c = conn.cursor()
-    c.execute("SELECT result FROM search_cache WHERE query_hash=?", (query_hash,))
+    c.execute("SELECT result, timestamp FROM search_cache WHERE query_hash=?", (query_hash,))
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    
+    if row:
+        result, ts_str = row
+        if ttl_hours and ts_str:
+            try:
+                ts = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                if datetime.now() > ts + timedelta(hours=ttl_hours):
+                    return None # Cache expired
+            except Exception:
+                return None
+        return result
+    return None
 
 def set_cache(query: str, source: str, result: str):
     query_hash = hashlib.sha256(f"{source}:{query.lower().strip()}".encode()).hexdigest()
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = sqlite3.connect(CACHE_DB)
     c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO search_cache VALUES (?, ?, ?, ?)", 
-              (query_hash, query, source, result))
+    c.execute("INSERT OR REPLACE INTO search_cache (query_hash, query, source, result, timestamp) VALUES (?, ?, ?, ?, ?)", 
+              (query_hash, query, source, result, ts))
     conn.commit()
     conn.close()
 
@@ -97,8 +118,11 @@ def run(query: str, source="auto", timelimit: str = None) -> str:
     if realtime:
         print(f"[SearchTriage] Real time query detected: '{query}'")
 
+    # Use 1 hour TTL for real-time queries, 24 hours for others.
+    ttl = 1 if realtime else 24
+
     # Search across multiple platforms with automatic fallback.
-    cached = get_cache(query, source)
+    cached = get_cache(query, source, ttl_hours=ttl)
     if cached:
         return f"[Cached {source}] \n{cached}"
 
@@ -141,4 +165,4 @@ def run(query: str, source="auto", timelimit: str = None) -> str:
         set_cache(query, applied_source, result)
         return f"[{applied_source.capitalize()} Results]\n{result}"
     
-    return "[Search] No results found across available engines."
+    return "[Search] No results found across available engines."

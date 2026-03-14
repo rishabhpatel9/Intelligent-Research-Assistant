@@ -304,8 +304,10 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
 
         with gr.Group():
             with gr.Row(elem_classes="header-bar"):
-                gr.Markdown("Output", scale=4)
-                copy_btn = gr.Button("Copy Report", size="sm", scale=1, elem_classes="copy-btn")
+                with gr.Column(scale=4, min_width=0):
+                    gr.Markdown("Output")
+                with gr.Column(scale=1, min_width=0):
+                    copy_btn = gr.Button("Copy Report", size="sm", elem_classes="copy-btn")
             
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
             

@@ -211,6 +211,8 @@ custom_css = """
 .challenge-box { font-size: 1.2rem !important; font-weight: 600 !important; margin: 1rem 0 !important; border: 1px dashed var(--border-color-primary) !important; padding: 1rem !important; border-radius: 8px !important; background: var(--background-fill-secondary) !important; text-align: center !important; }
 .task-header { padding: 5px 10px !important; border-bottom: 1px solid var(--border-color-primary) !important; margin-bottom: 5px !important; }
 .task-header p { margin: 0 !important; font-size: 0.9em !important; color: var(--body-text-color-subdued) !important; }
+.copy-btn { width: auto !important; height: 30px !important; min-width: 120px !important; padding: 0 10px !important; font-size: 0.85em !important; background: var(--block-label-background-fill) !important; border: 1px solid var(--border-color-primary) !important; }
+.copy-btn:hover { background: var(--background-fill-secondary) !important; color: var(--primary-500) !important; }
 """
 
 
@@ -301,8 +303,20 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
                     """)
 
         with gr.Group():
-            gr.Markdown("Output", elem_classes="header-bar")
+            with gr.Row(elem_classes="header-bar"):
+                gr.Markdown("Output", scale=4)
+                copy_btn = gr.Button("Copy Report", size="sm", scale=1, elem_classes="copy-btn")
+            
             output_display = gr.Markdown(value="_Results will appear here..._", elem_classes="output-markdown")
+            
+            # Simple JS to copy the markdown content by targetting the specific markdown div.
+            copy_btn.click(None, None, None, js="""
+                () => {
+                    const text = document.querySelector('.output-markdown').innerText;
+                    navigator.clipboard.writeText(text);
+                    alert('Report copied to clipboard!');
+                }
+            """)
             scroll_helper = gr.HTML(visible=False, sanitize=False)
     
     plan_outputs = task_components + [session_thread, output_display, log_output]
@@ -362,9 +376,21 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
         outputs=[gate_ui, main_ui, is_verified, error_msg, target_answer, user_answer, challenge_display]
     )
     iface.load(fn=generate_challenge, outputs=[challenge_display, target_answer])
+    
+    # Simple JS to stop Enter from bubbling up to the 'Plan Research' button if focus is on task edits
+    iface.load(None, None, None, js="""
+        () => {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const active = document.activeElement;
+                    if (active && active.tagName === 'TEXTAREA' && active.closest('.approval-group')) {
+                        // Let the textarea handle it (e.g. newline if supported) or just stop it
+                        e.stopPropagation();
+                    }
+                }
+            }, true);
+        }
+    """)
 
 if __name__ == "__main__":
     iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)
-
-#TODO - add a copy output button for the final report
-#FIXME - pressing enter anywhere in the UI triggers a new research plan

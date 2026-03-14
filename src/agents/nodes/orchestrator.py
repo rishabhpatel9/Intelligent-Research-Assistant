@@ -34,6 +34,7 @@ Focus on directly answering the user's question. Avoid redundant or overly broad
 - **Entity Identification**: Use "wikipedia" for broad concepts or specific people/places.
 - **Scientific Depth**: Use "arxiv" for technical, mathematical, or computer science queries.
 - **Current Events**: Use "duckduckgo" for recent news or general web searches.
+- **Temporal Precision**: For time sensitive queries, include the current year/date ({current_date[:10]}) directly in the task description to ensure fresh results.
 - **Logical Flow**: Ensure tasks are sequential (e.g., define the concept before exploring its impacts).
 
 ### Example JSON:
@@ -49,7 +50,7 @@ Return ONLY a valid JSON array. Ensure correct JSON syntax.
     """
     
     messages = [
-        {"role": "system", "content": "You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself. The Example JSON in user text is an example to show format, do not use the descripiton/content as output, come up with the questions based on the user query."},
+        {"role": "system", "content": f"You are a JSON generator that outputs ONLY valid JSON objects. No prose, no markdown wrappers. Do not escape double quotes unless they are part of the text CONTENT itself. The Example JSON in user text is an example to show format, do not use the descripiton/content as output, come up with the questions based on the user query. Treat every request as a fresh task with no previous context. The current year is {current_date[:4]}. If the query is about news or real time data, ensure your search descriptions include the year/date to prevent outdated results."},
         {"role": "user", "content": prompt}
     ]
     

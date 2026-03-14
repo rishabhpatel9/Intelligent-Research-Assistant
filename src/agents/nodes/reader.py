@@ -2,26 +2,41 @@ import requests
 import re
 import io
 import fitz  # PyMuPDF
+import random
 from bs4 import BeautifulSoup
 from src.agents.state import AgentState
 
 def extract_urls(text: str) -> list:
-    """Extract standard http/https URLs from a string."""
+    # Extract standard http/https URLs from a string.
     url_pattern = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
     return url_pattern.findall(text)
 
+def get_stealth_headers():
+    # Returns randomized browser like headers to bypass simple bot detection.
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'
+    ]
+    return {
+        'User-Agent': random.choice(user_agents),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/pdf,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-User': '?1'
+    }
+
 def fetch_and_extract(url: str) -> str:
-    """Simple deep scraping: fetch URL and extract main text (HTML or PDF)."""
+    # Simple deep scraping: fetch URL and extract main text (HTML or PDF).
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/pdf,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://www.google.com/',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-        }
+        headers = get_stealth_headers()
         
         response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
         response.raise_for_status()

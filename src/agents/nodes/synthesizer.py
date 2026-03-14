@@ -35,18 +35,13 @@ def synthesizer_node(state: AgentState) -> dict:
     links_section = "\n".join(source_links) if source_links else "No URLs found."
     
     prompt = f"""
-You are a Master Report Writer. You take snippets of verified research and transform them into a cohesive, high density academic style report. Avoid using unnecessary hyphens.
-Today's Date: {current_date}
-The user's query is: "{query}"
+You are a Master Research Synthesizer. Your goal is to create a high density, professional research dossier. Follow the format/instructions listed here - 
 
-Using ONLY the verified research context provided below, synthesize a comprehensive, highly-detailed, and beautiful Markdown report.
-
-### Structural Requirements:
-1. **Header**: Start with a `# Research Report: [Topic]` title.
-2. **Executive Summary**: A brief 3-4 sentence overview of findings.
-3. **Formatting**: Use sub-headers (##), bullet points, and Bold text for emphasis. 
-4. **Citations**: Use inline citations like `[Fact X]` where X corresponds to the Fact number.
-5. **No Hallucinations**: Do not add information that is not present in the provided context.
+1. **Header**: Start with a `# Research Dossier: [Topic]` title.
+2. **Executive Summary**: A concise overview of the most critical findings.
+3. **Synthesis**: Group findings into logical ## sub-headers. Use bold text for emphasis.
+4. **Data Integrity Section**: If there were significant gaps in the research, include a `## Information Gaps` section.
+5. **Inline Citations**: Use `[Fact X]` where X corresponds to the Fact number.
 6. **References Section**: At the end, provide a `### References` section.
    - For every Fact cited in the report, create a bulleted list item.
    - Format: `- [Description of the source](URL)`
@@ -54,14 +49,20 @@ Using ONLY the verified research context provided below, synthesize a comprehens
    - Example: If you cite `[Fact 1]`, the reference should be `- [Descriptive Title]({source_links[0].split(': ', 1)[1] if source_links else 'URL'})`
    - DO NOT use backticks. DO NOT use the words "Source Name/Title" literalized.
 
+Using these rules, generate a report for the target query: "{query}". Today's Date: {current_date}
+
 Source Link Map:
 {links_section}
 
-Context:
+Context Snippets:
 {context}
 """
     messages = [
-        {"role": "system", "content": "You are an expert report writer. You output beautiful markdown. No conversational filler."},
+        {"role": "system", "content": """You are an expert report writer. ### CORE INTEGRITY RULES:
+1. **No Hallucinations**: You must ONLY use information present in the research context provided below. No conversational filler.
+2. **Data-Gap Awareness**: If the user's query asked for specific details (e.g. precise figures, dates, or identities) that are NOT present in the provided snippets, you MUST explicitly state "Specific data regarding [X] was not found in the search results" in the relevant section.
+3. **Truthfulness**: Never guess or extrapolate. If the context is missing info, report the gap rather than filling it with general knowledge (unless you have 95%/+ confidence).
+4. **Formatting**: Use sub-headers (##), bullet points, and Bold text (only where necessary) for emphasis. Avoid using unnecessary hyphens."""},
         {"role": "user", "content": prompt}
     ]
     
@@ -71,3 +72,5 @@ Context:
         final_report = f"[Synthesis Error] {e}"
         
     return {"result": final_report, "logs": ["Synthesizer drafted the research report using verified findings."]}
+
+#TODO - stream final report while it's being generated rather that making the user wait

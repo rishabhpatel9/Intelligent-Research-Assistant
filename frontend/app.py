@@ -359,3 +359,5 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
 
 if __name__ == "__main__":
     iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)
+
+#TODO - add a copy output button

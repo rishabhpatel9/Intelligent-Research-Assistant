@@ -8,7 +8,7 @@ tests/
 uv.lock
 pyproject.toml
 Readme.md
-release_notes_v1.0.0.md
+release_notes.md
 example.env
 LICENSE
 assets/
@@ -16,3 +16,13 @@ assets/
 .gitignore
 docker-compose.yml
 implementation_plan.md
+.fast-agent
+logsbackend.txt
+logs.txt
+Agents And Tool Usage.mhtml
+benchmark_model.py
+fastagent.secrets.yaml
+Gradio Chatbot Docs.mhtml
+implementation_plan.md
+projectdescription.txt
+upskill_setup_guide.md

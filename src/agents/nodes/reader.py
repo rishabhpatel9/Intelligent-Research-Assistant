@@ -48,23 +48,39 @@ def fetch_and_extract(url: str) -> str:
             try:
                 with fitz.open(stream=io.BytesIO(response.content), filetype="pdf") as doc:
                     text = ""
-                    for page in doc:
+                    # Read up to first 10 pages for better context balance
+                    for page in doc[:10]:
                         text += page.get_text()
-                    return text[:5000] # Increased limit for PDFs as they are often denser
+                    return text[:8000] # Increased limit for PDFs
             except Exception as pdf_err:
                 return f"[PDF Parse Error: {str(pdf_err)}]"
         
         # Handle HTML
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Strip non-content elements.
-        for script in soup(["script", "style", "nav", "footer", "header", "aside"]):
-            script.decompose()
+        # Strip noise elements
+        for element in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "ad", "noscript"]):
+            element.decompose()
             
-        text = soup.get_text(separator=' ', strip=True)
-        text = re.sub(r'\s+', ' ', text)
+        # Try to find the main content area to reduce noise
+        main_content = soup.find('main') or soup.find('article') or soup.find('div', id=re.compile(r'content|main|article', re.I)) or soup.body
+        if not main_content:
+            return "[Scrape Error: No usable content area found]"
+
+        # Remove noisy attributes from all tags in the main content
+        for tag in main_content.find_all(True):
+            tag.attrs = {key: value for key, value in tag.attrs.items() if key.lower() not in ['id', 'class', 'style', 'onclick']}
+
+        # Extract text while preserving structural markers (like newlines for headers/lists) and manually process some tags to add semantic spacing
+        for tag in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'li']):
+            tag.insert_before('\n')
+            tag.insert_after('\n')
+
+        text = main_content.get_text(separator=' ', strip=True)
+        text = re.sub(r'\n\s*\n', '\n\n', text) # Clean up multiple newlines
+        text = re.sub(r' +', ' ', text) # Clean up extra spaces
         
-        return text[:3000] 
+        return text[:4500] # Slightly increased limit for cleaner content
     except requests.exceptions.HTTPError as e:
         return f"[HTTP Error {e.response.status_code}: {url}]"
     except Exception as e:

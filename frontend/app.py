@@ -52,7 +52,13 @@ def run_query(query: str, thread_id: str):
                             gr.update(value=task.get("description", ""), visible=True)
                         ])
                     else:
-                        updates.extend([gr.update(visible=False)] * 4)
+                        # Explicitly clear values and hide
+                        updates.extend([
+                            gr.update(visible=False),
+                            gr.update(value="", visible=False), 
+                            gr.update(value="auto", visible=False),
+                            gr.update(value="", visible=False)
+                        ])
 
                 messages = [
                     {

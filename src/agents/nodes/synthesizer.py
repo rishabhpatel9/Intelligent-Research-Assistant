@@ -37,7 +37,7 @@ def synthesizer_node(state: AgentState) -> dict:
     prompt = f"""
 You are a Master Research Synthesizer. Your goal is to create a high density, professional research dossier. Follow the format/instructions listed here - 
 
-1. **Header**: Start with a `# Research Dossier: [Topic]` title.
+1. **Header**: Start with a `# Research Report: [Topic]` title.
 2. **Executive Summary**: A concise overview of the most critical findings.
 3. **Synthesis**: Group findings into logical ## sub-headers. Use bold text for emphasis.
 4. **Data Integrity Section**: If there were significant gaps in the research, include a `## Information Gaps` section.

@@ -74,19 +74,21 @@ def search_arxiv(query: str) -> str:
     except Exception:
         return None
 
-def search_tavily(query: str) -> str:
+def search_tavily(query: str, depth: str = "basic") -> str:
     if not TAVILY_API_KEY:
         return None
     try:
-        payload = {"api_key": TAVILY_API_KEY, "query": query, "num_results": 3}
-        response = requests.post(TAVILY_URL, json=payload, timeout=10)
+        # Tavily is premium; returns higher quality snippets.
+        payload = {"api_key": TAVILY_API_KEY, "query": query, "num_results": 3, "search_depth": depth}
+        response = requests.post(TAVILY_URL, json=payload, timeout=12)
         response.raise_for_status()
         data = response.json()
         results = []
         for item in data.get("results", []):
             results.append(f"- {item.get('title')}\n  {item.get('snippet')}\n  {item.get('url')}")
         return "\n".join(results) if results else None
-    except Exception:
+    except Exception as e:
+        print(f"[SearchLog] Tavily error: {e}")
         return None
 
 def run(query: str, source="auto", timelimit: str = None) -> str:
@@ -102,6 +104,7 @@ def run(query: str, source="auto", timelimit: str = None) -> str:
 
     result = None
     applied_source = source
+    tavily_depth = "advanced" if realtime else "basic"
 
     if source == "wikipedia":
         # Search Wikipedia with fallback to general web search.
@@ -116,19 +119,26 @@ def run(query: str, source="auto", timelimit: str = None) -> str:
             applied_source = "duckduckgo"
             result = search_duckduckgo(f"{query} arxiv", timelimit=timelimit)
     elif source == "tavily":
-        result = search_tavily(query)
+        result = search_tavily(query, depth=tavily_depth)
     elif source == "duckduckgo":
         result = search_duckduckgo(query, timelimit=timelimit)
     else:
-        # "auto" fallback routing
-        applied_source = "duckduckgo"
-        result = search_duckduckgo(query, timelimit=timelimit)
-        if not result:
+        # Smart "auto" routing: Prioritize Tavily for real-time queries.
+        if realtime:
             applied_source = "tavily"
-            result = search_tavily(query)
+            result = search_tavily(query, depth=tavily_depth)
+            if not result:
+                applied_source = "duckduckgo"
+                result = search_duckduckgo(query, timelimit=timelimit)
+        else:
+            applied_source = "duckduckgo"
+            result = search_duckduckgo(query, timelimit=timelimit)
+            if not result:
+                applied_source = "tavily"
+                result = search_tavily(query, depth=tavily_depth)
 
     if result:
         set_cache(query, applied_source, result)
         return f"[{applied_source.capitalize()} Results]\n{result}"
     
-    return "[Search] No results found across available engines."
+    return "[Search] No results found across available engines."

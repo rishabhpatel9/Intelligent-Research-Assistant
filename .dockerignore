@@ -19,10 +19,17 @@ implementation_plan.md
 .fast-agent
 logsbackend.txt
 logs.txt
+*.log
+search_cache.db
+*.db
+*.sqlite
 Agents And Tool Usage.mhtml
 benchmark_model.py
 fastagent.secrets.yaml
 Gradio Chatbot Docs.mhtml
-implementation_plan.md
 projectdescription.txt
 upskill_setup_guide.md
+skills/
+.vscode/
+.idea/
+.DS_Store

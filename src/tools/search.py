@@ -40,6 +40,12 @@ def set_cache(query: str, source: str, result: str):
     conn.commit()
     conn.close()
 
+def is_realtime_query(query: str) -> bool:
+    """Detect if the query asks for live or highly recent information."""
+    rt_keywords = ["today", "now", "live", "results", "price", "stock", "trending", "current", "latest"]
+    q_lower = query.lower()
+    return any(kw in q_lower for kw in rt_keywords)
+
 def search_duckduckgo(query: str, timelimit: str = None) -> str:
     try:
         results = DDGS().text(query, max_results=3, timelimit=timelimit)
@@ -84,6 +90,11 @@ def search_tavily(query: str) -> str:
         return None
 
 def run(query: str, source="auto", timelimit: str = None) -> str:
+    # Identify if the query is real-time/high-freshness.
+    realtime = is_realtime_query(query)
+    if realtime:
+        print(f"[SearchTriage] Real time query detected: '{query}'")
+
     # Search across multiple platforms with automatic fallback.
     cached = get_cache(query, source)
     if cached:

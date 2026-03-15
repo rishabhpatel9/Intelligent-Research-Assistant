@@ -1,4 +1,5 @@
 import uuid
+import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional, Set
@@ -61,6 +62,8 @@ async def approve_plan(request: ApproveRequest):
     if request.plan is not None:
         workflow.update_state(config, {"plan": request.plan})
         
+    start_time = time.time()
+    
     def event_generator():
         try:
             # Stream progress updates from the research workflow.
@@ -68,6 +71,8 @@ async def approve_plan(request: ApproveRequest):
                 # Handle cancellation requests.
                 if request.thread_id in cancelled_threads:
                     cancelled_threads.discard(request.thread_id)
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Research cancelled after {elapsed_time:.2f} seconds for thread: {request.thread_id}")
                     yield f"data: {json.dumps({'status': 'cancelled', 'thread_id': request.thread_id})}\n\n"
                     break
                 if chunk:
@@ -101,11 +106,15 @@ async def approve_plan(request: ApproveRequest):
             vals = state.values or {}
             if not state.next:
                 final_result = vals.get("result", "")
+                elapsed_time = time.time() - start_time
+                # logger.info(f"Research completed in {elapsed_time:.2f} seconds for thread: {request.thread_id}")
+                logger.info(f"Research completed in {elapsed_time:.2f} seconds.")
                 yield f"data: {json.dumps({'status': 'completed', 'result': final_result})}\n\n"
             else:
                 yield f"data: {json.dumps({'status': 'error', 'message': f'Paused at {state.next}'})}\n\n"
         except Exception as e:
-            logger.exception("Error in event_generator stream")
+            elapsed_time = time.time() - start_time
+            logger.exception(f"Error in event_generator stream after {elapsed_time:.2f}s for thread {request.thread_id}")
             yield f"data: {json.dumps({'status': 'error', 'message': 'An unexpected error occurred during processing. Please check the logs.'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

@@ -108,7 +108,7 @@ async def approve_plan(request: ApproveRequest):
                 final_result = vals.get("result", "")
                 elapsed_time = time.time() - start_time
                 # logger.info(f"Research completed in {elapsed_time:.2f} seconds for thread: {request.thread_id}")
-                logger.info(f"Research completed in {elapsed_time:.2f} seconds.")
+                logger.info(f"Research completed in {elapsed_time:.2f} seconds. workflow test.")
                 yield f"data: {json.dumps({'status': 'completed', 'result': final_result})}\n\n"
             else:
                 yield f"data: {json.dumps({'status': 'error', 'message': f'Paused at {state.next}'})}\n\n"

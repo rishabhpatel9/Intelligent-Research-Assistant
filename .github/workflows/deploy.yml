@@ -15,9 +15,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22 # Default port, update if different
+          port: 22
           script: |
-            # Update the path below to the absolute path of your project on the server
             cd ${{ secrets.PROJECT_PATH }}
             git pull origin main
             docker compose down

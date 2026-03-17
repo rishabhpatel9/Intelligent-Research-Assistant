@@ -121,6 +121,6 @@ async def approve_plan(request: ApproveRequest):
 
 @app.post("/cancel")
 def cancel_run(request: CancelRequest):
-    """Mark a thread as cancelled so any active stream can stop early."""
+    # Mark a thread as cancelled so any active stream can stop early.
     cancelled_threads.add(request.thread_id)
     return {"status": "cancelled", "thread_id": request.thread_id}

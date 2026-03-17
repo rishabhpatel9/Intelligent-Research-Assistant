@@ -87,7 +87,7 @@ def fetch_and_extract(url: str) -> str:
         return f"[Scrape Error: {str(e)}]"
 
 def reader_node(state: AgentState) -> dict:
-    """Iterates over Scout's findings and performs deep scraping on URLs."""
+    # Iterates over Scout's findings and performs deep scraping on URLs.
     findings = state.get("research_findings") or []
     
     updated_findings = []

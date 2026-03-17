@@ -4,7 +4,7 @@ from src.agents.state import AgentState
 from src.utils.json_utils import parse_json_robustly
 
 def orchestrator_node(state: AgentState) -> dict:
-    """Decomposes the user's research brief into actionable sub-tasks."""
+    # Decomposes the user's research brief into actionable sub-tasks.
     query = state["query"]
     
     import random

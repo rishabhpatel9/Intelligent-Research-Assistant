@@ -26,6 +26,7 @@ class CancelRequest(BaseModel):
 
 @app.post("/query")
 def run_query(request: QueryRequest):
+    logger.info(f"User Query: {request.query}")
     thread_id = request.thread_id or str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
     

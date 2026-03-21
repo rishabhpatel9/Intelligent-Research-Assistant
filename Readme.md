@@ -13,6 +13,21 @@ The **Autonomous Research Studio** is a persistent multi-agent swarm designed to
 * **Structured, Publication-Ready Output:** The Synthesizer agent gathers all structured intelligence and transforms it into a beautifully formatted Markdown report with an Executive Summary and strict, verifiable source citations.
 * **Progressive Web App (PWA) Frontend:** The refined Gradio interface provides a modern, responsive, and application like experience. The UI features custom rounded components, a carefully crafted theme, and an optimized reading layout.
 
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center" width="65%"><img src="assets/researchplan.png" width="100%" alt="Research Plan Example" /></td>
+    <td align="center" width="35%"><img src="assets/thinkinglog.png" width="100%" alt="Thinking Log Example" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Research Plan Example</b></td>
+    <td align="center"><b>Thinking Log Example</b></td>
+  </tr>
+</table>
+
+</div>
+
 ## Technology Stack
 
 This project leverages a modern, highly optimized technology stack:

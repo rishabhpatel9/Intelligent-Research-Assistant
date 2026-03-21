@@ -1,25 +1,30 @@
-name: Deploy to Ubuntu Server
+name: Deploy to Self Hosted Server
 
 on:
-  workflow_dispatch: # Allows you to run this manually from the GitHub Actions tab
-  # push:
-  #   branches:
-  #     - main
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
+    
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            cd ${{ secrets.PROJECT_PATH }}
-            git pull origin main
-            docker compose down
-            docker compose up -d --build ira-frontend
-            docker image prune -f
+      - name: Deploy Submodule via Master Portfolio
+        run: |
+          # 1. Access the root folder on the local server where the master compose file is
+          cd /home/rish/Documents/Portfolio
+          
+          # 2. Update the submodule on disk to the latest pushed commit
+          git submodule update --remote Intelligent-Research-Assistant
+          
+          # 3. Pull latest changes (if any) to the master portfolio
+          git pull origin main
+          
+          # 4. Rebuild the services using the root docker-compose.yml
+          # This will automatically pick up the .env file in the root directory.
+          docker compose up -d --build ira-backend ira-frontend
+          
+          # 5. Clean up old images
+          docker image prune -f

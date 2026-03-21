@@ -6,7 +6,7 @@ import random
 def generate_challenge():
     a = random.randint(2, 9)
     b = random.randint(2, 9)
-    return f"**Hi Solve this to access the studio:** {a} + {b} = ?", a + b
+    return f"**Solve this to access the studio:** {a} + {b} = ?", a + b
 
 def verify_human(answer, target):
     try:

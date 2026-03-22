@@ -9,6 +9,8 @@ on:
 jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
     
     steps:
       - name: Deploy Submodule via Master Portfolio

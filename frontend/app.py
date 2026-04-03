@@ -395,4 +395,4 @@ with gr.Blocks(title="Autonomous Research Studio") as iface:
     """)
 
 if __name__ == "__main__":
-    iface.launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)
+    iface.queue(default_concurrency_limit=1, max_size=20).launch(server_name="0.0.0.0", pwa=True, theme=custom_theme, css=custom_css)

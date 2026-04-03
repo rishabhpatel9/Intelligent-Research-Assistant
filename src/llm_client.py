@@ -54,7 +54,8 @@ def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
             except Exception:
                 pass # Continue to model fallback
         
-        if model == "qwen3.5-2b" or model not in ["qwen3.5-0.8b"]:
+        if model == "gemma-4-e2b" or model not in ["qwen3.5-0.8b"]:
+            # Temp changed model from qwen3.5-2b to the latest gemma 4-e2b
             # Only fallback if we are not already at the smallest model
             fallback_model = "qwen3.5-0.8b"
             if model != fallback_model:

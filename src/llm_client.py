@@ -7,7 +7,7 @@ LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/comple
 # to avoid repeated 400 errors and retries.
 _unsupported_json_models = set()
 
-def query_llm(messages, model="gemma-4-e2b", temperature=0.7, json_mode=False):
+def query_llm(messages, model="google/gemma-4-e2b", temperature=0.7, json_mode=False):
     # Send messages to the language model and return the response.
     
     # Check if we already know this model doesn't support JSON mode
@@ -54,7 +54,7 @@ def query_llm(messages, model="gemma-4-e2b", temperature=0.7, json_mode=False):
             except Exception:
                 pass # Continue to model fallback
         
-        if model == "gemma-4-e2b" or model not in ["qwen3.5-0.8b"]:
+        if model == "google/gemma-4-e2b" or model not in ["qwen3.5-0.8b"]:
             # Temp changed model from qwen3.5-2b to the latest gemma 4-e2b
             # Only fallback if we are not already at the smallest model
             fallback_model = "qwen3.5-0.8b"

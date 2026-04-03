@@ -7,7 +7,7 @@ LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/comple
 # to avoid repeated 400 errors and retries.
 _unsupported_json_models = set()
 
-def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
+def query_llm(messages, model="gemma-4-e2b", temperature=0.7, json_mode=False):
     # Send messages to the language model and return the response.
     
     # Check if we already know this model doesn't support JSON mode

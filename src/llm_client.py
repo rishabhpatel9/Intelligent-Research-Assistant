@@ -30,8 +30,9 @@ def query_llm(messages, model="qwen3.5-2b", temperature=0.7, json_mode=False):
                 if response.status_code == 400 and "response_format.type" in response.text:
                     raise ValueError("JSON_MODE_NOT_SUPPORTED")
                 
-                print(f"[LLM] Server returned error {response.status_code}: {response.text}")
-                response.raise_for_status()
+                error_msg = f"{response.status_code} Client Error: {response.reason} for url: {response.url} | Body: {response.text}"
+                print(f"[LLM] Server returned error {error_msg}")
+                raise requests.exceptions.HTTPError(error_msg, response=response)
             
             data = response.json()
             return data["choices"][0]["message"]["content"]

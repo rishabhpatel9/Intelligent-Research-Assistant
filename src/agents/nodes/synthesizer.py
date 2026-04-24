@@ -3,8 +3,7 @@ from datetime import datetime
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 
-# SAFETY: Limit total context characters to avoid LLM context window issues (approx 15k chars)
-# This only kicks in as a safety feature if there are an excessive number of findings.
+# Limit total context characters, only kicks in as a safety feature if there are an excessive number of findings.
 MAX_CONTEXT_CHARS = 15000
 
 def synthesizer_node(state: AgentState) -> dict:

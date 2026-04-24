@@ -6,8 +6,8 @@ class AgentState(TypedDict):
     query: str
     category: str
     plan: List[Dict[str, Any]]
-    research_findings: Annotated[List[Dict[str, Any]], operator.add]
-    completed_tasks: Annotated[List[str], operator.add]
+    research_findings: List[Dict[str, Any]]
+    completed_tasks: List[str]
     result: str
     messages: Annotated[List[Dict[str, Any]], operator.add]
     logs: Annotated[List[str], operator.add]

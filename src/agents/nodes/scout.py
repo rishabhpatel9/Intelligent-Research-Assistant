@@ -34,8 +34,9 @@ def scout_node(state: AgentState) -> dict:
             print(f"[Scout] Error executing task {task_id}: {e}")
             # Skip marking as complete on failure to allow for retries.
             
-    node_logs = []
-    for f in new_findings:
-        node_logs.append(f"Scout: Investigated '{f['query']}' via {f['source']}.")
-        
-    return {"research_findings": new_findings, "completed_tasks": new_completed, "logs": node_logs}
+    node_logs = [f"Scout: Investigated '{f['query']}' via {f['source']}." for f in new_findings]
+    
+    all_findings = (state.get("research_findings") or []) + new_findings
+    all_completed = (state.get("completed_tasks") or []) + new_completed
+    
+    return {"research_findings": all_findings, "completed_tasks": all_completed, "logs": node_logs}

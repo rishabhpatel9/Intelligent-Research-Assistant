@@ -115,4 +115,4 @@ Respond ONLY with a valid JSON object:
             node_logs.append(f"Critic: Task {f.get('task_id', 'unknown')} {status}. Reason: {f.get('reason', 'N/A')}")
             f["critic_logged"] = True
 
-    return {"plan": new_plan, "logs": node_logs}
+    return {"plan": new_plan, "research_findings": findings, "completed_tasks": completed_tasks, "logs": node_logs}

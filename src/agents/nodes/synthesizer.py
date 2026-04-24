@@ -3,6 +3,10 @@ from datetime import datetime
 from src.llm_client import query_llm
 from src.agents.state import AgentState
 
+# SAFETY: Limit total context characters to avoid LLM context window issues (approx 15k chars)
+# This only kicks in as a safety feature if there are an excessive number of findings.
+MAX_CONTEXT_CHARS = 15000
+
 def synthesizer_node(state: AgentState) -> dict:
     # Create the final research report.
     query = state.get("query")
@@ -12,10 +16,25 @@ def synthesizer_node(state: AgentState) -> dict:
     # Focus on findings that have been verified.
     passed_findings = [f for f in findings if f.get("pass", True)]
     
+    # Deduplicate findings by URL or data hash to prevent redundant info in report
+    seen_sources = set()
+    unique_findings = []
+    for f in passed_findings:
+        data = f.get("scraped_data") or f.get("data", "")
+        # Use first URL as a proxy for source identity if available
+        urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', data)
+        source_id = urls[0] if urls else data[:100]
+        
+        if source_id not in seen_sources:
+            seen_sources.add(source_id)
+            unique_findings.append(f)
+    
     context_blocks = []
     source_links = []
     
-    for idx, f in enumerate(passed_findings):
+    current_context_len = 0
+    
+    for idx, f in enumerate(unique_findings):
         fact_num = idx + 1
         src = f.get("source", "Unknown")
         data = f.get("scraped_data") or f.get("data", "No data")
@@ -29,7 +48,15 @@ def synthesizer_node(state: AgentState) -> dict:
                 primary_url = "https://" + primary_url
             source_links.append(f"Fact {fact_num}: {primary_url}")
         
-        context_blocks.append(f"--- Fact {fact_num} [Source: {src}] ---\n{data[:2000]}\n")
+        block = f"--- Fact {fact_num} [Source: {src}] ---\n{data[:2000]}\n"
+        
+        if current_context_len + len(block) > MAX_CONTEXT_CHARS:
+            # Safety feature: stop adding if we are reaching context limits
+            print(f"[Synthesizer] Context limit reached at Fact {fact_num}. Trimming remaining findings.")
+            break
+            
+        context_blocks.append(block)
+        current_context_len += len(block)
         
     context = "\n".join(context_blocks)
     links_section = "\n".join(source_links) if source_links else "No URLs found."
